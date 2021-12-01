@@ -3,7 +3,9 @@ import numpy as np
 
 import Base
 import Environment as Envi
-from Environment import alpha, delt, epsi, sigma
+import copy
+import os
+from Environment import alpha, delt, epsi, sigma, alpha2
 
 S = 1
 
@@ -21,7 +23,8 @@ class Local_server:
         # 生成无向完全图，此时index是真正的user index
         user_index_list = list(range(begin_num,begin_num + nl))
         self.G = nx.generators.classic.complete_graph(user_index_list)
-        self.clusters = {0: Base.Cluster(b=np.zeros(d), T=0, V=np.eye(d), users_begin = begin_num, d=d, user_num = nl, t= self.rounds)}  # users的初始化方法直接抄了老师里面的，不知道对不对
+        #print('图中所有的节点', self.G.nodes())
+        self.clusters = {0: Base.Cluster(b=np.zeros(d), T=0, V=np.zeros((d,d)), users_begin = begin_num, d=d, user_num = nl, t= self.rounds, theta= np.zeros(self.d), rewards= np.zeros(self.rounds), best_rewards= np.zeros(self.rounds))}  # users的初始化方法直接抄了老师里面的，不知道对不对
         self.cluster_inds = dict()
         self.begin_num = begin_num
         for i in range(begin_num, begin_num + nl):
@@ -53,51 +56,62 @@ class Local_server:
         c = self.cluster_inds[user_index] # 找到被更新的user所属于的local cluster
         #i = user_index-self.begin_num # 感觉图中的node是从0开始排序的，但是user index其实并不是
         i = user_index
+        #print("user_index in line 57:" ,user_index)
         # 存储最开始的cluster，以便下一步使用
         origin_cluster = self.clusters[c]
         A = [a for a in self.G.neighbors(i)]
+        #print("user_index in line 61:", user_index)
         for j in A:
             #user2_index = j + self.begin_num
             user2_index = j
             c2 = self.cluster_inds[user2_index] # c和c2应该是同一个cluster
-            user1 = self.clusters[c].users[user_index]
+            user1 = self.clusters[c].users[i]
             user2 = self.clusters[c2].users[user2_index]
-            if user1.T != 0 and user2.T != 0 and self.if_delete(user_index, user2_index, self.clusters[c]):
+            if user1.T != 0 and user2.T != 0 and self.if_delete(i, user2_index, self.clusters[c]):
                 self.G.remove_edge(i,j)
                 update_cluster = True
 
         if update_cluster:
             C =set()
+            #print("user_index in line 74:", i)
             C = nx.node_connected_component(self.G, i) #对应的user index,这是更新后的cluster应该有的user
+            #print("the set:", C)
             remain_users = dict()
-            for i in C:
-                remain_users[i] = self.clusters[c].get_user(user_index)
+            for m in C:
+                remain_users[m] = self.clusters[c].get_user(m)
 
 
             if len(C) < len(self.clusters[c].users):
                 all_users_index = set(self.clusters[c].users) # 这是原始的cluster中的所有user index
                 all_users = dict()
-                for user_index in all_users_index:
-                    all_users[user_index] = self.clusters[c].get_user(user_index)
+                for user_index2 in all_users_index:
+                    all_users[user_index2] = self.clusters[c].get_user(user_index2)
                 # 将当前cluster应有的user放到这个cluster中
-                tmp_cluster = Cluster(b=sum([k.b for k in remain_users]), T =sum([k.T for k in remain_users]),
-                                           V = sum([k.V for k in remain_users]), user_begin = min(remain_users), d = self.d, user_num = len(remain_users), t=self.rounds, users = remain_users)
+                tmp_cluster = Base.Cluster(b=sum([remain_users[k].b for k in remain_users]), T =sum([remain_users[k].T for k in remain_users]),
+                                           V = sum([remain_users[k].V for k in remain_users]), users_begin = min(remain_users), d = self.d, user_num = len(remain_users), t=self.rounds,
+                                           users = remain_users, theta= sum([remain_users[k].theta for k in remain_users]),
+                                           rewards= sum([remain_users[k].rewards for k in remain_users]), best_rewards= sum([remain_users[k].best_rewards for k in remain_users]))
                 self.clusters[c] = tmp_cluster
 
                 # 将新的cluster中包含的user从原始的cluster中删除
-                for user_index in all_users_index:
-                    if remain_users.__contains__(user_index):
-                        all_users.pop(user_index)
+                for user_index3 in all_users_index:
+                    if remain_users.__contains__(user_index3):
+                        all_users.pop(user_index3)
 
                 c = max(self.clusters) + 1
                 while len(all_users) > 0:
+                    #print("remain users:", list(all_users))
                     j = np.random.choice(list(all_users))
                     C = nx.node_connected_component(self.G, j)
+                    #print(type(C))
+                    #print("j:",j)
                     new_cluster_users = dict()
                     for k in C:
-                        new_cluster_users[k] = origin_cluster.get_user(user_index)
-                    self.clusters[c] = Cluster(b=sum([n.b for n in new_cluster_users]), T=sum([n.T for n in new_cluster_users]),
-                                          V=sum([n.V for n in new_cluster_users]), user_begin = min(new_cluster_users), d = self.d, user_num = len(new_cluster_users), t=self.rounds, users = new_cluster_users)
+                        new_cluster_users[k] = origin_cluster.get_user(k)
+                    self.clusters[c] = Base.Cluster(b=sum([new_cluster_users[n].b for n in new_cluster_users]), T=sum([new_cluster_users[n].T for n in new_cluster_users]),
+                                          V=sum([new_cluster_users[n].V for n in new_cluster_users]), users_begin = min(new_cluster_users), d = self.d, user_num = len(new_cluster_users),
+                                                    t=self.rounds, users = new_cluster_users, theta= sum([new_cluster_users[n].theta for n in new_cluster_users]),
+                                                    rewards= sum([new_cluster_users[k].rewards for k in new_cluster_users]), best_rewards= sum([new_cluster_users[k].best_rewards for k in new_cluster_users]))
                     for k in C:
                         self.cluster_inds[k] = c
 
@@ -117,11 +131,14 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
         self.rounds = T
         self.l_server_num = L
         self.d = d
-        self.cluster_usernum = np.zeros(L,np.int64)  # 这个是记录每个local——server的user数量的
+        self.cluster_usernum = np.zeros(L*n,np.int64)  # 这个是记录每个local——server的user数量的
         self.clusters = dict()
+        self.regret = np.zeros(self.rounds)
+        self.reward = np.zeros(self.rounds)
+        self.best_reward = np.zeros(self.rounds)
         user_begin = 0
         for i in range(L):
-            self.clusters[i]= Base.Cluster(b=np.zeros(self.d), T=0, V=np.zeros((d,d)), users_begin=user_begin,d = self.d, user_num=userList[i], t=self.rounds, users = {}) # global_server上的cluster，最开始只有L个, 对应L个local server
+            self.clusters[i]= Base.Cluster(b=np.zeros(self.d), T=0, V=np.zeros((d,d)), users_begin=user_begin,d = self.d, user_num=userList[i], t=self.rounds, theta= np.zeros(self.d),users = {},rewards= np.zeros(self.rounds), best_rewards= np.zeros(self.rounds)) # global_server上的cluster，最开始只有L个, 对应L个local server
             user_begin += userList[i]
         self.cluster_inds = np.zeros(n,np.int64)   # 存储每个user对应的global cluster的index,下标索引值代表了user index
         self.l_server_inds = np.zeros(n,np.int64)  # 存储每个user所对应的local server的index,现在这种方法是否可行的关键在于user属local server index 的信息会不会传回global server
@@ -158,6 +175,26 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
        #l_server.recommend(M_t, b, beta_t, user_index)
        return M_t, b, beta_t
 
+    def communicate(self):
+        g_cluster_index = 0
+        for i in range(self.l_server_num):
+            l_server = self.l_server_list[i]
+            for cluster_index in l_server.clusters:
+                # self.clusters[g_cluster_index] = Base.Cluster(b=l_server.clusters[cluster_index].b, T =l_server.clusters[cluster_index].T,
+                #                            V = l_server.clusters[cluster_index].V, users_begin = l_server.clusters[cluster_index].users_begin, d = self.d, user_num = l_server.clusters[cluster_index].user_num, t=self.rounds, theta= l_server.clusters[cluster_index].theta, users = l_server.clusters[cluster_index].users)
+                self.clusters[g_cluster_index] = copy.deepcopy(l_server.clusters[cluster_index]);
+
+                for user in l_server.cluster_inds:
+                    if l_server.cluster_inds[user] == cluster_index:
+                        self.cluster_inds[user] = g_cluster_index
+                self.cluster_usernum[g_cluster_index] = l_server.clusters[cluster_index].user_num
+                g_cluster_index += 1
+
+        #print("gcluster number:" ,len(self.clusters))
+
+
+
+
     def merge(self):
         cmax = max(self.clusters)
         for c1 in range(cmax-1):
@@ -172,12 +209,15 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
                 fact_T2 = np.sqrt((1 + np.log(1 + T2)) / (1 + T2))
                 theta1 = self.clusters[c1].theta
                 theta2 = self.clusters[c2].theta
-                if(np.linalg.norm(theta1 - theta2) >= alpha * (fact_T1 + fact_T2)):
+                if(np.linalg.norm(theta1 - theta2) >= alpha2 * (fact_T1 + fact_T2)):
                     continue
                 else:
                     for i in range(self.usernum):
                         if self.cluster_inds[i] == c2:
                             self.cluster_inds[i] = c1
+
+                    self.cluster_usernum[c1] = self.cluster_usernum[c1] + self.cluster_usernum[c2]
+                    self.cluster_usernum[c2] = 0
 
                     self.clusters[c1].V = self.clusters[c1].V + self.clusters[c2].V
                     self.clusters[c1].b = self.clusters[c1].b + self.clusters[c2].b
@@ -186,6 +226,7 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
                     for user in self.clusters[c2].users:
                         self.clusters[c1].users.setdefault(user, self.clusters[c2].users[user] )
                     del self.clusters[c2]
+        #print("gcluster number after merge:", len(self.clusters))
 
     def run(self, envir, T):
         for i in range(1, T+1):
@@ -200,13 +241,38 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
             items = envir.get_items()
             r_item_index = l_server.recommend(M_t, b, beta_t, user_index, items)
             x = items[r_item_index]
-            reward, y, best_reward, ksi_noise, B_noise = envir.feedback(items,i, b, M_t, r_item_index, self.d)
-            l_cluster.users[user_index].store_info(x, y, i - 1, reward, best_reward, ksi_noise[0], B_noise)
-            l_cluster.store_info(x, y, i - 1, reward, best_reward, ksi_noise[0], B_noise)
+            self.reward[i - 1], y, self.best_reward[i - 1], ksi_noise, B_noise = envir.feedback(items,user_index, b, M_t, r_item_index, self.d)
+            l_cluster.users[user_index].store_info(x, y, i - 1, self.reward[i - 1],self.best_reward[i -1], ksi_noise[0], B_noise)
+            l_cluster.store_info(x, y, i - 1, self.reward[i - 1], self.best_reward[i - 1], ksi_noise[0], B_noise)
             # 这一步相当于delete edge 并计算 aggregated information，但是没有send to global server 这一步
             l_server.update(user_index,i - 1)
-            g_cluster.store_info(x, y, i - 1, reward, best_reward, ksi_noise[0], B_noise)
+            g_cluster.store_info(x, y, i - 1, self.reward[i - 1], self.best_reward[i - 1], ksi_noise[0], B_noise)
+            self.communicate()
             self.merge()
+            self.regret[i - 1] = self.best_reward[i - 1] - self.reward[i - 1]
+
+        return self.regret
+
+            # g_cluster_index = self.cluster_inds[user_index]
+            # g_cluster = self.clusters[g_cluster_index]
+            # print("user_index:",user_index)
+            # print("user reward:", l_cluster.users[user_index].rewards[i - 1])
+            # print("user b:", l_cluster.users[user_index].b)
+            # print("user V:", l_cluster.users[user_index].V)
+            # print("user theta:", l_cluster.users[user_index].theta)
+            # print("user T:", l_cluster.users[user_index].T)
+            # print("l_cluster reward:", l_cluster.rewards[i - 1])
+            # print("l_cluster b:", l_cluster.b)
+            # print("l_cluster V:", l_cluster.V)
+            # print("l_cluster theta:", l_cluster.theta)
+            # print("l_cluster T:", l_cluster.T)
+            # print("g_cluster reward:", g_cluster.rewards[i - 1])
+            # print("g_cluster b:", g_cluster.b)
+            # print("g_cluster V:", g_cluster.V)
+            # print("g_cluster theta:", g_cluster.theta)
+            # print("g_cluster T:", g_cluster.T)
+            # print(" ")
+
 
 
 
