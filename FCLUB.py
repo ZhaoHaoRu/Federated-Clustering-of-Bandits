@@ -1,3 +1,4 @@
+#version 2
 import networkx as nx
 import numpy as np
 
@@ -38,8 +39,12 @@ class Local_server:
 
     def recommend(self, M, b , beta, user_index, items):
         Minv = np.linalg.inv(M)
+        theta = np.dot(Minv,b)
+        # print(type(theta))
+        # print(type(items))
         # 将global server上算得的M，b，β传给当前的local server
-        r_item_index = np.argmax(np.dot(Minv,b) + beta * (np.matmul(items, Minv) * items).sum(axis=1))
+        r_item_index = np.argmax(np.dot(items,theta) + beta * (np.matmul(items, Minv) * items).sum(axis=1))
+        #np.argmax(np.dot(items, theta) + self._beta(N, t) * (np.matmul(items, Sinv) * items).sum(axis=1))
         return r_item_index
 
     def if_delete(self, user_index1, user_index2, cluster): # 这个cluster是要进行删边操作的cluster
@@ -82,6 +87,7 @@ class Local_server:
 
 
             if len(C) < len(self.clusters[c].users):
+                print(t)
                 all_users_index = set(self.clusters[c].users) # 这是原始的cluster中的所有user index
                 all_users = dict()
                 for user_index2 in all_users_index:
@@ -170,7 +176,7 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
        lambda_t = gamma_t * 2
        # 这里算β的S和L还不是很确定，S=L=1
        beta_t = Envi.beta(sigma, alpha, gamma_t, S, self.d, T+1, self.l_server_num)
-       M_t = lambda_t*np.eye(self.d) + V
+       M_t = np.eye(self.d)* np.float_(lambda_t) + V
        # 接下来将M_t, b, beta传给local server，先直接调local server类中的函数
        #l_server.recommend(M_t, b, beta_t, user_index)
        return M_t, b, beta_t

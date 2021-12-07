@@ -7,8 +7,8 @@ import sys
 # Some constant
 # c = 0.01
 
-alpha = 0.9
-alpha2 = 0.7
+alpha = 4
+alpha2 = 3.5
 delt = 0.99
 # alpha1 =
 epsi = 0.9
