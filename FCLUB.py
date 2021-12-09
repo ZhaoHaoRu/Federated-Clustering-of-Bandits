@@ -137,7 +137,7 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
         self.rounds = T
         self.l_server_num = L
         self.d = d
-        self.cluster_usernum = np.zeros(L*n,np.int64)  # 这个是记录每个local——server的user数量的
+        self.cluster_usernum = np.zeros(L*n,np.int64)  # 这个是记录每个global cluster的user数量的
         self.clusters = dict()
         self.regret = np.zeros(self.rounds)
         self.reward = np.zeros(self.rounds)
@@ -248,6 +248,8 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
             r_item_index = l_server.recommend(M_t, b, beta_t, user_index, items)
             x = items[r_item_index]
             self.reward[i - 1], y, self.best_reward[i - 1], ksi_noise, B_noise = envir.feedback(items,user_index, b, M_t, r_item_index, self.d)
+            # print("ksi_noise in ",i,"round is",ksi_noise)
+            # print("B_noise in ", i, "round is", B_noise)
             l_cluster.users[user_index].store_info(x, y, i - 1, self.reward[i - 1],self.best_reward[i -1], ksi_noise[0], B_noise)
             l_cluster.store_info(x, y, i - 1, self.reward[i - 1], self.best_reward[i - 1], ksi_noise[0], B_noise)
             # 这一步相当于delete edge 并计算 aggregated information，但是没有send to global server 这一步

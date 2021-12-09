@@ -29,7 +29,7 @@ class User:
 
 class Cluster(User):
     # Base cluster
-    def __init__(self, b, T, V, users_begin, d, user_num, t, theta , rewards ,best_rewards, users = {} ,):
+    def __init__(self, b, T, V, users_begin, d, user_num, t, theta , rewards ,best_rewards, users = {}):
         self.d = d
         if not users: #如果user为空的话说明是最开始的初始化，否则传入一个字典
             self.users = dict()
