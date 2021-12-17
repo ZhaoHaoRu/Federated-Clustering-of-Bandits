@@ -7,8 +7,13 @@ import sys
 # Some constant
 # c = 0.01
 
-alpha = 4
-alpha2 = 3.5
+#自定参数
+# alpha = 4
+# alpha2 = 3.5
+# alpha = 241
+alpha = 1.5
+#alpha2 = 250
+alpha2 = 1
 delt = 0.99
 # alpha1 =
 epsi = 0.9
@@ -46,7 +51,7 @@ def beta(sigma, alpha, gamma, S, d, t, L):
     tmp2 = cmath.sqrt(3 * gamma)
     tmp3 = cmath.sqrt((1/gamma) * d * t)
     #print("beta:", sigma * tmp1 + S * tmp2 + sigma * tmp3)
-    return sigma * tmp1 + S * tmp2 + sigma * tmp3
+    return sigma * tmp1 + S * tmp2 + sigma * tmp3 * 0.5
 
 
 sigma = sigm(delt, epsi);
