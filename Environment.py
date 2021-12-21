@@ -13,7 +13,7 @@ import sys
 # alpha = 241
 alpha = 1.5
 #alpha2 = 250
-alpha2 = 1
+alpha2 = 2
 delt = 0.99
 # alpha1 =
 epsi = 0.9
@@ -46,12 +46,14 @@ def gamma(t, d, alpha, sigma):
     return sigma * cmath.sqrt(t) * tmp
 
 
-def beta(sigma, alpha, gamma, S, d, t, L):
-    tmp1 = cmath.sqrt(2 * np.log(2 / alpha) + d * np.log(3 + t * np.power(L, 2) / (d * gamma)))
-    tmp2 = cmath.sqrt(3 * gamma)
-    tmp3 = cmath.sqrt((1/gamma) * d * t)
-    #print("beta:", sigma * tmp1 + S * tmp2 + sigma * tmp3)
-    return sigma * tmp1 + S * tmp2 + sigma * tmp3 * 0.5
+def beta(sigma, alpha, gamma, S, d, t, L = 1):
+    # tmp1 = cmath.sqrt(2 * np.log(2 / alpha) + d * np.log(3 + t * np.power(L, 2) / (d * gamma)))
+    # tmp2 = cmath.sqrt(3 * gamma)
+    # tmp3 = cmath.sqrt((1/gamma) * d * t)
+    # #print("beta:", sigma * tmp1 + S * tmp2 + sigma * tmp3)
+    # return sigma * tmp1 + S * tmp2 + sigma * tmp3 * 0.5
+    tmp1 = cmath.sqrt(2 * np.log(2 / alpha) + d * np.log(3 + t * np.power(L, 2) / d))
+    return tmp1*5
 
 
 sigma = sigm(delt, epsi);
@@ -77,11 +79,10 @@ class Environment:
         theta = np.matmul(Minv, b)
         B_noise = np.random.normal(0, sigma ** 2, (d,d))
         reward = np.dot(self.theta[i], x)
-        if reward >= 0 and reward <= 1:
+        # if reward >= 0 and reward <= 1:
         #   print("reward:", reward)
-            y = np.random.binomial(1, reward)  # 在19 cascading中介绍的一个概念，标记recommend item是否被click，在update b的值的时候会用到
-        else:
-            y = 0
+        y = np.random.binomial(1, reward)  # 在19 cascading中介绍的一个概念，标记recommend item是否被click，在update b的值的时候会用到
+        # else:
         ksi_noise = np.random.normal(np.zeros(d), np.eye(d), (d, d))
         best_reward = np.max(np.dot(items, self.theta[i]))
         # print("best reward:",best_reward)
