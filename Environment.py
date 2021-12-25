@@ -17,6 +17,8 @@ alpha2 = 2
 delt = 0.99
 # alpha1 =
 epsi = 0.9
+U = 1.1
+D = 1.1
 
 
 def isInvertible(S):
@@ -39,11 +41,12 @@ def sigm(delta, epsilon):
 
 
 def gamma(t, d, alpha, sigma):
-    tmp = 4 * cmath.sqrt(d) + 2 * np.log(2 * t / alpha)
-    # print(cmath.sqrt(d))
-    # print(2 * t / alpha)
-    # print(np.log(2 * t / alpha))
-    return sigma * cmath.sqrt(t) * tmp
+    # tmp = 4 * cmath.sqrt(d) + 2 * np.log(2 * t / alpha)
+    # # print(cmath.sqrt(d))
+    # # print(2 * t / alpha)
+    # # print(np.log(2 * t / alpha))
+    # return sigma * cmath.sqrt(t) * tmp
+    return 1
 
 
 def beta(sigma, alpha, gamma, S, d, t, L = 1):
@@ -53,7 +56,7 @@ def beta(sigma, alpha, gamma, S, d, t, L = 1):
     # #print("beta:", sigma * tmp1 + S * tmp2 + sigma * tmp3)
     # return sigma * tmp1 + S * tmp2 + sigma * tmp3 * 0.5
     tmp1 = cmath.sqrt(2 * np.log(2 / alpha) + d * np.log(3 + t * np.power(L, 2) / d))
-    return tmp1*5
+    return tmp1*0.5
 
 
 sigma = sigm(delt, epsi);
@@ -73,11 +76,27 @@ class Environment:
         return self.items
 
     #这里的i是user index
-    def feedback(self, items,i, b, M, k, d):  # 寻找regret的操作，k是实际选取的item的index
+    def feedback_Local(self, items,i, k, d):  # 寻找regret的操作，k是实际选取的item的index
+        x = items[k, :]  # 将选取的item从item_array中选取出来
+        B_noise = np.random.normal(0, sigma ** 2, (d,d))
+        reward = np.dot(self.theta[i], x)
+        #这里这样写是因为代码里面有bug可能使得reward<0，回头改掉
+        if reward < 0 or reward > 1:
+            print("reward:", reward)
+            y = 0
+        else:
+            print("reward:", reward)
+            y = np.random.binomial(1, reward)  # 在19 cascading中介绍的一个概念，标记recommend item是否被click，在update b的值的时候会用到
+        ksi_noise = np.random.normal(np.zeros(d), np.eye(d), (d, d))
+        best_reward = np.max(np.dot(items, self.theta[i]))
+        # print("best reward:",best_reward)
+        return reward, y, best_reward, ksi_noise, B_noise
+
+    def feedback(self, items, i, b, M, k, d):  # 寻找regret的操作，k是实际选取的item的index
         x = items[k, :]  # 将选取的item从item_array中选取出来
         Minv = np.linalg.inv(M)
         theta = np.matmul(Minv, b)
-        B_noise = np.random.normal(0, sigma ** 2, (d,d))
+        B_noise = np.random.normal(0, sigma ** 2, (d, d))
         reward = np.dot(self.theta[i], x)
         # if reward >= 0 and reward <= 1:
         #   print("reward:", reward)
