@@ -104,9 +104,9 @@ class DC_Cluster(User):
     #这里的store_info 相当于update upload buffer
     def store_info(self,x, y, t, r, br, ksi_noise, B_noise):
         #self.V = self.V + np.outer(x, x) + B_noise
-        self.S_up = self.S + np.outer(x, x)
+        self.S_up += np.outer(x, x)
         #self.b = self.b + y * x + ksi_noise
-        self.u_up = self.u + y * x
+        self.u_up += y * x
         self.T_up += 1
         self.best_rewards[t] += br
         self.rewards[t] += r

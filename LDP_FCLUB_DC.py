@@ -69,13 +69,15 @@ class Local_server:
         fact_T2 = np.sqrt((1 + np.log(1 + T2)) / (1 + T2))
         t1 = cluster.users[user_index1].T
         gamma_1 = Envi.gamma(t1,self.d,alpha,sigma)
-        theta1 = np.matmul(np.linalg.inv(gamma_1*2*np.eye(self.d) + cluster.users[user_index1].V), cluster.users[user_index1].b)
-        # theta1 = cluster.users[user_index1].theta
+        # theta1 = np.matmul(np.linalg.inv(gamma_1*2*np.eye(self.d) + cluster.users[user_index1].V), cluster.users[user_index1].b)
+        # cluster.users[user_index1].theta = theta1
+        theta1 = cluster.users[user_index1].theta
         t2 = cluster.users[user_index2].T
         gamma_2 = Envi.gamma(t2, self.d, alpha, sigma)
-        theta2 = np.matmul(np.linalg.inv(gamma_2 * 2 * np.eye(self.d) + cluster.users[user_index2].V),
-                           cluster.users[user_index2].b)
-        #theta2 = cluster.users[user_index2].theta
+        # theta2 = np.matmul(np.linalg.inv(gamma_2 * 2 * np.eye(self.d) + cluster.users[user_index2].V),
+        #                    cluster.users[user_index2].b)
+        # cluster.users[user_index2].theta = theta2
+        theta2 = cluster.users[user_index2].theta
         return np.linalg.norm(theta1 - theta2) > alpha * (fact_T1 + fact_T2)
 
     def update(self, user_index, t): # 这里的user_index是从0到n的一个自然数
@@ -251,6 +253,7 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
                 T2 = self.clusters[c2].T
                 fact_T1 = np.sqrt((1 + np.log(1 + T1)) / (1 + T1))
                 fact_T2 = np.sqrt((1 + np.log(1 + T2)) / (1 + T2))
+                #看看直接用theta要不要改
                 theta1 = self.clusters[c1].theta
                 theta2 = self.clusters[c2].theta
                 if(np.linalg.norm(theta1 - theta2) >= alpha2 * (fact_T1 + fact_T2)):
@@ -297,8 +300,24 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
             #Renew the cluster information and create new upload/download buffers
             #更新global cluster的S,u,T工作在merge 中已经完成
             for g_cluster_id in self.clusters:
+                self.clusters[g_cluster_id].S = np.zeros((self.d,self.d))
+                self.clusters[g_cluster_id].u = np.zeros(self.d)
+                self.clusters[g_cluster_id].T = 0
                 l_cluster_info = self.partition[g_cluster_id]
-                for i in range(0,self.usernum,2):
+                for i in range(0,self.usernum*2,2):
+                    l_server_id = l_cluster_info[i].astype(np.int)
+                    l_cluster_id = l_cluster_info[i + 1].astype(np.int)
+                    if l_cluster_id == -1 or l_server_id == -1:
+                        continue
+                    print("l_cluster_info:",l_cluster_info)
+                    print("l_cluster_id:",l_cluster_id)
+                    l_server = self.l_server_list[l_server_id]
+                    l_cluster = l_server.clusters[l_cluster_id]
+                    self.clusters[g_cluster_id].S += l_cluster.S
+                    self.clusters[g_cluster_id].u += l_cluster.u
+                    self.clusters[g_cluster_id].T += l_cluster.T
+
+                for i in range(0,self.usernum*2,2):
                     l_server_id = l_cluster_info[i].astype(np.int)
                     l_cluster_id = l_cluster_info[i + 1].astype(np.int)
                     if l_cluster_id == -1 or l_server_id == -1:
@@ -319,13 +338,17 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
     def find_global_cluster(self, l_server_id, l_cluster_id):
         g_cluster_want = -1
         for g_cluster_id in self.clusters:
+            print("exist value:", self.clusters.keys())
             g_cluster_want = g_cluster_id
             l_cluster_info = self.partition[g_cluster_id]
-            for i in range(0, self.usernum, 2):
+            for i in range(0, self.usernum*2, 2):
                 l_server_id_tmp = l_cluster_info[i]
                 l_cluster_id_tmp = l_cluster_info[i + 1]
-                if l_server_id_tmp == l_server_id or l_cluster_id_tmp == l_cluster_id:
+                if l_server_id_tmp == l_server_id and l_cluster_id_tmp == l_cluster_id:
+                    print("g_cluster_want:", g_cluster_want)
                     return g_cluster_want
+
+        return -1
 
 
     def check_upload(self, l_server_id, l_cluster_id):
@@ -335,36 +358,43 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
         S2 = l_cluster.S_up
         if np.linalg.det(S1 + S2) / np.linalg.det(S1) >= U:
             g_cluster_id = self.find_global_cluster(l_server_id, l_cluster_id)
-            self.clusters[g_cluster_id].S += S2
-            self.clusters[g_cluster_id].u += l_cluster.u_up
-            self.clusters[g_cluster_id].T += l_cluster.T_up
-            l_cluster_info = self.partition[g_cluster_id]
-            for i in range(0, self.usernum, 2):
-                l_server_id_other = l_cluster_info[i]
-                l_cluster_id_other = l_cluster_info[i + 1]
-                if l_server_id_other == l_server_id and l_cluster_id_other == l_cluster_id:
-                    continue
-                if l_server_id_other == -1 or l_cluster_id_other == -1:
-                    continue
-                l_server_other = self.l_server_list[l_server_id_other.astype(np.int)]
-                l_cluster_other = l_server_other.clusters[l_cluster_id_other.astype(np.int)]
-                l_cluster_other.S_down += S2
-                l_cluster_other.u_down += l_cluster.u_up
-                l_cluster_other.T_down += l_cluster.T_up
+            if g_cluster_id == -1:
+                print("l_server_id",l_server_id)
+                print("l_cluster_id", l_cluster_id)
+                print(self.partition)
+                self.clusters[9].S += S2
+            if g_cluster_id != -1:
+                print("exist value1:", self.clusters.keys())
+                self.clusters[g_cluster_id].S += S2
+                self.clusters[g_cluster_id].u += l_cluster.u_up
+                self.clusters[g_cluster_id].T += l_cluster.T_up
+                l_cluster_info = self.partition[g_cluster_id]
+                for i in range(0, self.usernum*2, 2):
+                    l_server_id_other = l_cluster_info[i]
+                    l_cluster_id_other = l_cluster_info[i + 1]
+                    if l_server_id_other == l_server_id and l_cluster_id_other == l_cluster_id:
+                        continue
+                    if l_server_id_other == -1 or l_cluster_id_other == -1:
+                        continue
+                    l_server_other = self.l_server_list[l_server_id_other.astype(np.int)]
+                    l_cluster_other = l_server_other.clusters[l_cluster_id_other.astype(np.int)]
+                    l_cluster_other.S_down += S2
+                    l_cluster_other.u_down += l_cluster.u_up
+                    l_cluster_other.T_down += l_cluster.T_up
 
-            #Local server cleans the buffer
-            l_cluster.S += l_cluster.S_up
-            l_cluster.u += l_cluster.u_up
-            l_cluster.T += l_cluster.T_up
-            l_cluster.S_up = np.zeros((self.d,self.d))
-            l_cluster.u_up = np.zeros(self.d)
-            l_cluster.T_up = 0
+                #Local server cleans the buffer
+                l_cluster.S += l_cluster.S_up
+                l_cluster.u += l_cluster.u_up
+                l_cluster.T += l_cluster.T_up
+                l_cluster.S_up = np.zeros((self.d,self.d))
+                l_cluster.u_up = np.zeros(self.d)
+                l_cluster.T_up = 0
 
 
     def check_download(self,g_cluster_id):
         l_cluster_info = self.partition[g_cluster_id]
         V_g = self.clusters[g_cluster_id].S
-        for i in range(0, self.usernum, 2):
+        for i in range(0, self.usernum*2, 2):
             l_server_id = l_cluster_info[i]
             l_cluster_id = l_cluster_info[i + 1]
             if l_server_id == -1 or l_cluster_id == -1:
