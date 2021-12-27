@@ -69,15 +69,15 @@ class Local_server:
         fact_T2 = np.sqrt((1 + np.log(1 + T2)) / (1 + T2))
         t1 = cluster.users[user_index1].T
         gamma_1 = Envi.gamma(t1,self.d,alpha,sigma)
-        # theta1 = np.matmul(np.linalg.inv(gamma_1*2*np.eye(self.d) + cluster.users[user_index1].V), cluster.users[user_index1].b)
-        # cluster.users[user_index1].theta = theta1
-        theta1 = cluster.users[user_index1].theta
+        theta1 = np.matmul(np.linalg.inv(gamma_1*2*np.eye(self.d) + cluster.users[user_index1].V), cluster.users[user_index1].b)
+        cluster.users[user_index1].theta = theta1
+        # theta1 = cluster.users[user_index1].theta
         t2 = cluster.users[user_index2].T
         gamma_2 = Envi.gamma(t2, self.d, alpha, sigma)
-        # theta2 = np.matmul(np.linalg.inv(gamma_2 * 2 * np.eye(self.d) + cluster.users[user_index2].V),
-        #                    cluster.users[user_index2].b)
-        # cluster.users[user_index2].theta = theta2
-        theta2 = cluster.users[user_index2].theta
+        theta2 = np.matmul(np.linalg.inv(gamma_2 * 2 * np.eye(self.d) + cluster.users[user_index2].V),
+                           cluster.users[user_index2].b)
+        cluster.users[user_index2].theta = theta2
+        # theta2 = cluster.users[user_index2].theta
         return np.linalg.norm(theta1 - theta2) > alpha * (fact_T1 + fact_T2)
 
     def update(self, user_index, t): # 这里的user_index是从0到n的一个自然数
@@ -316,6 +316,8 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
                     self.clusters[g_cluster_id].S += l_cluster.S
                     self.clusters[g_cluster_id].u += l_cluster.u
                     self.clusters[g_cluster_id].T += l_cluster.T
+                    self.clusters[g_cluster_id].theta = np.matmul(
+                        np.linalg.inv(np.eye(self.d) + self.clusters[g_cluster_id].S), self.clusters[g_cluster_id].u)
 
                 for i in range(0,self.usernum*2,2):
                     l_server_id = l_cluster_info[i].astype(np.int)
@@ -327,6 +329,9 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
                     l_server = self.l_server_list[l_server_id]
                     l_cluster = l_server.clusters[l_cluster_id]
                     l_cluster.S = self.clusters[g_cluster_id].S
+                    l_cluster.theta = np.matmul(
+                        np.linalg.inv(np.eye(self.d) + l_cluster.S),l_cluster.u)
+
                     #create new buffers
                     l_cluster.S_up = np.zeros((self.d,self.d))
                     l_cluster.S_down = np.zeros((self.d,self.d))
@@ -368,6 +373,7 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
                 self.clusters[g_cluster_id].S += S2
                 self.clusters[g_cluster_id].u += l_cluster.u_up
                 self.clusters[g_cluster_id].T += l_cluster.T_up
+                self.clusters[g_cluster_id].theta = np.matmul(np.linalg.inv(np.eye(self.d) + self.clusters[g_cluster_id].S), self.clusters[g_cluster_id].u)
                 l_cluster_info = self.partition[g_cluster_id]
                 for i in range(0, self.usernum*2, 2):
                     l_server_id_other = l_cluster_info[i]
@@ -386,6 +392,7 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
                 l_cluster.S += l_cluster.S_up
                 l_cluster.u += l_cluster.u_up
                 l_cluster.T += l_cluster.T_up
+                l_cluster.theta = np.matmul(np.linalg.inv(np.eye(self.d) + l_cluster.S), l_cluster.u)
                 l_cluster.S_up = np.zeros((self.d,self.d))
                 l_cluster.u_up = np.zeros(self.d)
                 l_cluster.T_up = 0
@@ -405,6 +412,7 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
                 l_cluster.S += l_cluster.S_down
                 l_cluster.u += l_cluster.u_down
                 l_cluster.T += l_cluster.T_down
+                l_cluster.theta = np.matmul(np.linalg.inv(np.eye(self.d) + l_cluster.S), l_cluster.u)
 
                 l_cluster.S_down = np.zeros((self.d,self.d))
                 l_cluster.u_down = np.zeros(self.d)
@@ -418,6 +426,8 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
             self.detection(2**s - 1)
             for i in range(1, 2**s + 1):
                 t = 2**s - 2 + i
+                if t == 3394:
+                    t = t
                 if t % 5000 == 0:
                     print(t)
                 user_all = envir.generate_users()
