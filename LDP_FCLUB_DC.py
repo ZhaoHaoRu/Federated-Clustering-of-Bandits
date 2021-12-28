@@ -228,60 +228,123 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
 
 
 
+    def if_merge(self,cluster_id1, cluster_id2):
+        cluster1 = self.clusters[cluster_id1]
+        cluster2 = self.clusters[cluster_id2]
+        T1 = cluster1.T
+        T2 = cluster2.T
+        fact_T1 = np.sqrt((1 + np.log(1 + T1)) / (1 + T1))
+        fact_T2 = np.sqrt((1 + np.log(1 + T2)) / (1 + T2))
+        #这里的theta需不需要重新算啊
+        theta1 = cluster1.theta
+        theta2 = cluster2.theta
+        if (np.linalg.norm(theta1 - theta2) >= alpha2 * (fact_T1 + fact_T2)):
+            return False
+        else:
+            return True
+
+
 
     def merge(self):
-        #在merge这一步就完成gram matrix等信息的更新以及partition的更新
+        # #在merge这一步就完成gram matrix等信息的更新以及partition的更新
+        # cmax = max(self.clusters)
+        # tmp_partition = self.partition
+        #
+        # for c1 in range(cmax + 1):
+        #     if c1 not in self.clusters:
+        #         continue
+        #     #将cluster c1的信息更新到partition
+        #     # tmp_partition[c1][0] = self.clusters[c1].l_server_index
+        #     # print(tmp_partition[c1][0])
+        #     # tmp_partition[c1][1] = self.clusters[c1].index
+        #     # print(tmp_partition[c1][1])
+        #     global_l_cluster_num = 1
+        #     for c2 in range(c1 + 1,cmax + 1):
+        #         if c2 not in self.clusters:
+        #             continue
+        #         #将cluster c2的信息更新到partition
+        #         # tmp_partition[c2][0] = self.clusters[c2].l_server_index
+        #         # tmp_partition[c2][1] = self.clusters[c2].index
+        #         T1 = self.clusters[c1].T
+        #         T2 = self.clusters[c2].T
+        #         fact_T1 = np.sqrt((1 + np.log(1 + T1)) / (1 + T1))
+        #         fact_T2 = np.sqrt((1 + np.log(1 + T2)) / (1 + T2))
+        #         #看看直接用theta要不要改
+        #         theta1 = self.clusters[c1].theta
+        #         theta2 = self.clusters[c2].theta
+        #         if(np.linalg.norm(theta1 - theta2) >= alpha2 * (fact_T1 + fact_T2)):
+        #             continue
+        #         else:
+        #             for i in range(self.usernum):
+        #                 if self.cluster_inds[i] == c2:
+        #                     self.cluster_inds[i] = c1
+        #             self.cluster_usernum[c1] = self.cluster_usernum[c1] + self.cluster_usernum[c2]
+        #             self.cluster_usernum[c2] = 0
+        #
+        #             tmp_partition[c1][global_l_cluster_num*2] = self.clusters[c2].l_server_index
+        #             tmp_partition[c1][global_l_cluster_num * 2 + 1] = self.clusters[c2].index
+        #             tmp_partition[c2][0] = -1
+        #             tmp_partition[c2][1] = -1
+        #             global_l_cluster_num += 1
+        #
+        #             self.clusters[c1].S = self.clusters[c1].S + self.clusters[c2].S
+        #             self.clusters[c1].u = self.clusters[c1].u + self.clusters[c2].u
+        #             self.clusters[c1].T = self.clusters[c1].T + self.clusters[c2].T
+        #             self.clusters[c1].user_num = self.clusters[c1].user_num + self.clusters[c2].user_num
+        #             self.clusters[c1].theta =  np.matmul(np.linalg.inv(np.eye(self.d) + self.clusters[c1].S), self.clusters[c1].u)
+        #             for user in self.clusters[c2].users:
+        #                 self.clusters[c1].users.setdefault(user, self.clusters[c2].users[user] )
+        #             del self.clusters[c2]
+        # self.partition  =  tmp_partition
+        # print("tmp_partition",tmp_partition)
+        #print("gcluster number after merge:", len(self.clusters))
+        done_merge = False
+        cluster_node = list(self.clusters.keys())
+        cluster_G = nx.complete_graph(cluster_node)
+        nodes = cluster_G.nodes()
         cmax = max(self.clusters)
-        tmp_partition = self.partition
-
-        for c1 in range(cmax):
+        for c1 in nodes:
             if c1 not in self.clusters:
                 continue
-            #将cluster c1的信息更新到partition
-            # tmp_partition[c1][0] = self.clusters[c1].l_server_index
-            # print(tmp_partition[c1][0])
-            # tmp_partition[c1][1] = self.clusters[c1].index
-            # print(tmp_partition[c1][1])
-            global_l_cluster_num = 1
-            for c2 in range(c1 + 1,cmax + 1):
+            A = [a for a in cluster_G.neighbors(c1)]
+            for c2 in A:
                 if c2 not in self.clusters:
                     continue
-                #将cluster c2的信息更新到partition
-                # tmp_partition[c2][0] = self.clusters[c2].l_server_index
-                # tmp_partition[c2][1] = self.clusters[c2].index
-                T1 = self.clusters[c1].T
-                T2 = self.clusters[c2].T
-                fact_T1 = np.sqrt((1 + np.log(1 + T1)) / (1 + T1))
-                fact_T2 = np.sqrt((1 + np.log(1 + T2)) / (1 + T2))
-                #看看直接用theta要不要改
-                theta1 = self.clusters[c1].theta
-                theta2 = self.clusters[c2].theta
-                if(np.linalg.norm(theta1 - theta2) >= alpha2 * (fact_T1 + fact_T2)):
-                    continue
-                else:
-                    for i in range(self.usernum):
-                        if self.cluster_inds[i] == c2:
-                            self.cluster_inds[i] = c1
-                    self.cluster_usernum[c1] = self.cluster_usernum[c1] + self.cluster_usernum[c2]
-                    self.cluster_usernum[c2] = 0
+                if self.if_merge(c1,c2):
+                    print(c1,c2)
+                    cluster_G.remove_edge(c1,c2)
+                    done_merge = True
 
-                    tmp_partition[c1][global_l_cluster_num*2] = self.clusters[c2].l_server_index
-                    tmp_partition[c1][global_l_cluster_num * 2 + 1] = self.clusters[c2].index
-                    tmp_partition[c2][0] = -1
-                    tmp_partition[c2][1] = -1
+
+        if done_merge:
+            cluster_num = nx.number_connected_components(cluster_G)
+            for cluster_set in nx.connected_components(cluster_G):
+                global_l_cluster_num = 1
+                cluster_list = list(cluster_set)
+                C1 = cluster_list[0]
+                for i in cluster_list[1:]:
+                    self.clusters[C1].S += self.clusters[i].S
+                    self.clusters[C1].u += self.clusters[i].u
+                    self.clusters[C1].T += self.clusters[i].T
+                    self.clusters[C1].user_num += self.clusters[i].user_num
+                    self.cluster_usernum[C1] += self.cluster_usernum[i]
+                    #此处theta需要重新计算嘛？
+
+                    self.partition[C1][global_l_cluster_num * 2] = self.clusters[i].l_server_index
+                    self.partition[C1][global_l_cluster_num * 2 + 1] = self.clusters[i].index
+                    self.partition[i][0] = -1
+                    self.partition[i][1] = -1
                     global_l_cluster_num += 1
+                    for j in range(self.usernum):
+                        if self.cluster_inds[j] == i:
+                            self.cluster_inds[j] = cluster_list[0]
+                    for user in self.clusters[i].users:
+                        self.clusters[cluster_list[0]].users.setdefault(user, self.clusters[i].users[user])
+                    del self.clusters[i]
+                self.clusters[C1].theta = np.matmul(np.linalg.inv(np.eye(self.d) + self.clusters[C1].S),
+                                                    self.clusters[C1].u)
 
-                    self.clusters[c1].S = self.clusters[c1].S + self.clusters[c2].S
-                    self.clusters[c1].u = self.clusters[c1].u + self.clusters[c2].u
-                    self.clusters[c1].T = self.clusters[c1].T + self.clusters[c2].T
-                    self.clusters[c1].user_num = self.clusters[c1].user_num + self.clusters[c2].user_num
-                    self.clusters[c1].theta =  np.matmul(np.linalg.inv(np.eye(self.d) + self.clusters[c1].S), self.clusters[c1].u)
-                    for user in self.clusters[c2].users:
-                        self.clusters[c1].users.setdefault(user, self.clusters[c2].users[user] )
-                    del self.clusters[c2]
-        self.partition  =  tmp_partition
-        print("tmp_partition",tmp_partition)
-        #print("gcluster number after merge:", len(self.clusters))
+
 
 
     def detection(self, t):
