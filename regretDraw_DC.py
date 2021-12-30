@@ -9,6 +9,8 @@ print('T:',T)
 regret = data['G_server_regret']
 print(regret.shape)
 regret_range = np.arange(1,T + 1)
+regret_min = 3
+time = 0
 # reward = data['reward']
 cumulative_reward = list()
 accumulate_regret = list()
@@ -18,6 +20,10 @@ for i in range(T):
     Cumulative_regret += regret[i]
     accumulate_regret.append(Cumulative_regret)
     regret[i] = Cumulative_regret/(i + 1)
+    print(regret[i])
+    if regret[i] < regret_min and i > 10:
+        regret_min = regret[i]
+        time = i
 
 #average regret
 ax = fig.add_subplot(111)
@@ -33,7 +39,11 @@ plt.legend()
 plt.grid()
 plt.show()
 
-#accumulate regret
+print(regret_min)
+print(time)
+
+
+#accumulate_regret
 ax = fig.add_subplot(111)
 plt.plot(regret_range, accumulate_regret, 'r.-', ms=2, label="cumulative regret")
 ax.set_ylabel('regret in each round')
