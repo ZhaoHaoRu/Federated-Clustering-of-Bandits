@@ -68,75 +68,75 @@ class Local_server:
         #np.argmax(np.dot(items, theta) + self._beta(N, t) * (np.matmul(items, Sinv) * items).sum(axis=1))
         return r_item_index
 
-    def if_delete(self, user_index1, user_index2, cluster): # 这个cluster是要进行删边操作的cluster
-        T1 = cluster.users[user_index1].T
-        T2 = cluster.users[user_index2].T
-        fact_T1 = np.sqrt((1 + np.log(1 + T1)) / (1 + T1))
-        fact_T2 = np.sqrt((1 + np.log(1 + T2)) / (1 + T2))
-        t1 = cluster.users[user_index1].T
-        gamma_1 = Envi.gamma(t1,self.d,alpha,sigma)
-        theta1 = np.matmul(np.linalg.inv(gamma_1*2*np.eye(self.d) + cluster.users[user_index1].V), cluster.users[user_index1].b)
-        cluster.users[user_index1].theta = theta1
-        # theta1 = cluster.users[user_index1].theta
-        t2 = cluster.users[user_index2].T
-        gamma_2 = Envi.gamma(t2, self.d, alpha, sigma)
-        theta2 = np.matmul(np.linalg.inv(gamma_2 * 2 * np.eye(self.d) + cluster.users[user_index2].V),
-                           cluster.users[user_index2].b)
-        cluster.users[user_index2].theta = theta2
-        # theta2 = cluster.users[user_index2].theta
-        return np.linalg.norm(theta1 - theta2) > alpha * (fact_T1 + fact_T2)
-
-    def check_update(self, user_index, t): # 这里的user_index是从0到n的一个自然数
-        update_cluster = False
-        c = self.cluster_inds[user_index] # 找到被更新的user所属于的local cluster
-        #i = user_index-self.begin_num # 感觉图中的node是从0开始排序的，但是user index其实并不是
-        i = user_index
-        #print("user_index in line 57:" ,user_index)
-        # 存储最开始的cluster，以便下一步使用
-        origin_cluster = self.clusters[c]
-        A = [a for a in self.G.neighbors(i)]
-        #print("user_index in line 61:", user_index)
-        for j in A:
-            #user2_index = j + self.begin_num
-            user2_index = j
-            c2 = self.cluster_inds[user2_index] # c和c2应该是同一个cluster
-            user1 = self.clusters[c].users[i]
-            user2 = self.clusters[c2].users[user2_index]
-            if user1.T != 0 and user2.T != 0 and self.if_delete(i, user2_index, self.clusters[c]):
-                self.G.remove_edge(i,j)
-                update_cluster = True
-
-
-
-    def update_cluster(self):
-        user_list = list(self.cluster_inds.keys())
-        user_dict = dict()
-
-        #删除原先所有的cluster
-        for j in list(self.clusters.keys()):
-            for i in self.clusters[j].users:
-                user_dict[i] = copy.deepcopy(self.clusters[j].users[i])
-            del self.clusters[j]
-
-        c = 0
-        #根据现在的connected_components重新分
-        #print("components num:", nx.number_connected_components(self.G))
-        for cluster_set in nx.connected_components(self.G):
-            all_user = list(cluster_set)
-            remain_users = dict()
-            for k in all_user:
-                remain_users[k] = user_dict[k]
-            tmp_cluster = Base.DC_Cluster(b=sum([remain_users[k].b for k in remain_users]),
-                                          T=sum([remain_users[k].T for k in remain_users]),
-                                               V = sum([remain_users[k].V for k in remain_users]), users_begin = min(remain_users), d = self.d, user_num = len(remain_users), t=self.rounds,
-                                               users = copy.deepcopy(remain_users),
-                                               rewards= sum([remain_users[k].rewards for k in remain_users]), best_rewards= sum([remain_users[k].best_rewards for k in remain_users]),
-                                               l_server_index= self.index, index= c)
-            self.clusters[c] = tmp_cluster
-            for k in remain_users:
-                self.cluster_inds[k] = c
-
-            c += 1
+    # def if_delete(self, user_index1, user_index2, cluster): # 这个cluster是要进行删边操作的cluster
+    #     T1 = cluster.users[user_index1].T
+    #     T2 = cluster.users[user_index2].T
+    #     fact_T1 = np.sqrt((1 + np.log(1 + T1)) / (1 + T1))
+    #     fact_T2 = np.sqrt((1 + np.log(1 + T2)) / (1 + T2))
+    #     t1 = cluster.users[user_index1].T
+    #     gamma_1 = Envi.gamma(t1,self.d,alpha,sigma)
+    #     theta1 = np.matmul(np.linalg.inv(gamma_1*2*np.eye(self.d) + cluster.users[user_index1].V), cluster.users[user_index1].b)
+    #     cluster.users[user_index1].theta = theta1
+    #     # theta1 = cluster.users[user_index1].theta
+    #     t2 = cluster.users[user_index2].T
+    #     gamma_2 = Envi.gamma(t2, self.d, alpha, sigma)
+    #     theta2 = np.matmul(np.linalg.inv(gamma_2 * 2 * np.eye(self.d) + cluster.users[user_index2].V),
+    #                        cluster.users[user_index2].b)
+    #     cluster.users[user_index2].theta = theta2
+    #     # theta2 = cluster.users[user_index2].theta
+    #     return np.linalg.norm(theta1 - theta2) > alpha * (fact_T1 + fact_T2)
+    #
+    # def check_update(self, user_index, t): # 这里的user_index是从0到n的一个自然数
+    #     update_cluster = False
+    #     c = self.cluster_inds[user_index] # 找到被更新的user所属于的local cluster
+    #     #i = user_index-self.begin_num # 感觉图中的node是从0开始排序的，但是user index其实并不是
+    #     i = user_index
+    #     #print("user_index in line 57:" ,user_index)
+    #     # 存储最开始的cluster，以便下一步使用
+    #     origin_cluster = self.clusters[c]
+    #     A = [a for a in self.G.neighbors(i)]
+    #     #print("user_index in line 61:", user_index)
+    #     for j in A:
+    #         #user2_index = j + self.begin_num
+    #         user2_index = j
+    #         c2 = self.cluster_inds[user2_index] # c和c2应该是同一个cluster
+    #         user1 = self.clusters[c].users[i]
+    #         user2 = self.clusters[c2].users[user2_index]
+    #         if user1.T != 0 and user2.T != 0 and self.if_delete(i, user2_index, self.clusters[c]):
+    #             self.G.remove_edge(i,j)
+    #             update_cluster = True
+    #
+    #
+    #
+    # def update_cluster(self):
+    #     user_list = list(self.cluster_inds.keys())
+    #     user_dict = dict()
+    #
+    #     #删除原先所有的cluster
+    #     for j in list(self.clusters.keys()):
+    #         for i in self.clusters[j].users:
+    #             user_dict[i] = copy.deepcopy(self.clusters[j].users[i])
+    #         del self.clusters[j]
+    #
+    #     c = 0
+    #     #根据现在的connected_components重新分
+    #     #print("components num:", nx.number_connected_components(self.G))
+    #     for cluster_set in nx.connected_components(self.G):
+    #         all_user = list(cluster_set)
+    #         remain_users = dict()
+    #         for k in all_user:
+    #             remain_users[k] = user_dict[k]
+    #         tmp_cluster = Base.DC_Cluster(b=sum([remain_users[k].b for k in remain_users]),
+    #                                       T=sum([remain_users[k].T for k in remain_users]),
+    #                                            V = sum([remain_users[k].V for k in remain_users]), users_begin = min(remain_users), d = self.d, user_num = len(remain_users), t=self.rounds,
+    #                                            users = copy.deepcopy(remain_users),
+    #                                            rewards= sum([remain_users[k].rewards for k in remain_users]), best_rewards= sum([remain_users[k].best_rewards for k in remain_users]),
+    #                                            l_server_index= self.index, index= c)
+    #         self.clusters[c] = tmp_cluster
+    #         for k in remain_users:
+    #             self.cluster_inds[k] = c
+    #
+    #         c += 1
 
 
 
@@ -209,20 +209,8 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
 
 
 
-    def if_merge(self,cluster_id1, cluster_id2):
-        cluster1 = self.clusters[cluster_id1]
-        cluster2 = self.clusters[cluster_id2]
-        T1 = cluster1.T
-        T2 = cluster2.T
-        fact_T1 = np.sqrt((1 + np.log(1 + T1)) / (1 + T1))
-        fact_T2 = np.sqrt((1 + np.log(1 + T2)) / (1 + T2))
-        #这里的theta需不需要重新算啊
-        theta1 = cluster1.theta
-        theta2 = cluster2.theta
-        if (np.linalg.norm(theta1 - theta2) < alpha2 * (fact_T1 + fact_T2)):
-            return False
-        else:
-            return True
+    def if_not_merge(self,cluster_id1, cluster_id2):
+        return False
 
 
 
@@ -240,7 +228,7 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
             for c2 in A:
                 if c2 not in self.clusters:
                     continue
-                if self.if_merge(c1,c2):
+                if self.if_not_merge(c1,c2):
                     #(c1,c2)
                     cluster_G.remove_edge(c1,c2)
                     done_merge = True
@@ -278,63 +266,55 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
 
 
     def detection(self, t):
-        for l_index in range(len(self.l_server_list)):
-            check_server = self.l_server_list[l_index]
-            for i in check_server.cluster_inds:
-                user1_index = i
-                check_server.check_update(user1_index, t)
-
-            check_server.update_cluster()
-
-
         #Upload the local clustered information to the global server,maybe should have some time cost
-
         former_partition  = self.partition
         self.communicate()
         self.merge(former_partition)
-        if (former_partition != self.partition).any():
+        #在local server上面没有split操作的时候，partition是绝对不会变得
+        #因此此时假设partition必定更新
+        # if (former_partition != self.partition).any():
             #Renew the cluster information and create new upload/download buffers
             #更新global cluster的S,u,T工作在merge 中已经完成
-            for g_cluster_id in self.clusters:
-                self.clusters[g_cluster_id].S = np.zeros((self.d,self.d))
-                self.clusters[g_cluster_id].u = np.zeros(self.d)
-                self.clusters[g_cluster_id].T = 0
-                l_cluster_info = self.partition[g_cluster_id]
-                for i in range(0,self.usernum*2,2):
-                    l_server_id = l_cluster_info[i].astype(np.int)
-                    l_cluster_id = l_cluster_info[i + 1].astype(np.int)
-                    if l_cluster_id == -1 or l_server_id == -1:
-                        continue
-                    #print("l_cluster_info:",l_cluster_info)
-                    #print("l_cluster_id:",l_cluster_id)
-                    l_server = self.l_server_list[l_server_id]
-                    l_cluster = l_server.clusters[l_cluster_id]
-                    self.clusters[g_cluster_id].S += l_cluster.S
-                    self.clusters[g_cluster_id].u += l_cluster.u
-                    self.clusters[g_cluster_id].T += l_cluster.T
-                    self.clusters[g_cluster_id].theta = np.matmul(
-                        np.linalg.inv(np.eye(self.d) + self.clusters[g_cluster_id].S), self.clusters[g_cluster_id].u)
+        for g_cluster_id in self.clusters:
+            self.clusters[g_cluster_id].S = np.zeros((self.d,self.d))
+            self.clusters[g_cluster_id].u = np.zeros(self.d)
+            self.clusters[g_cluster_id].T = 0
+            l_cluster_info = self.partition[g_cluster_id]
+            for i in range(0,self.usernum*2,2):
+                l_server_id = l_cluster_info[i].astype(np.int)
+                l_cluster_id = l_cluster_info[i + 1].astype(np.int)
+                if l_cluster_id == -1 or l_server_id == -1:
+                    continue
+                #print("l_cluster_info:",l_cluster_info)
+                #print("l_cluster_id:",l_cluster_id)
+                l_server = self.l_server_list[l_server_id]
+                l_cluster = l_server.clusters[l_cluster_id]
+                self.clusters[g_cluster_id].S += l_cluster.S
+                self.clusters[g_cluster_id].u += l_cluster.u
+                self.clusters[g_cluster_id].T += l_cluster.T
+                self.clusters[g_cluster_id].theta = np.matmul(
+                    np.linalg.inv(np.eye(self.d) + self.clusters[g_cluster_id].S), self.clusters[g_cluster_id].u)
 
-                for i in range(0,self.usernum*2,2):
-                    l_server_id = l_cluster_info[i].astype(np.int)
-                    l_cluster_id = l_cluster_info[i + 1].astype(np.int)
-                    if l_cluster_id == -1 or l_server_id == -1:
-                        continue
-                    #print("l_cluster_info:",l_cluster_info)
-                    #print("l_cluster_id:",l_cluster_id)
-                    l_server = self.l_server_list[l_server_id]
-                    l_cluster = l_server.clusters[l_cluster_id]
-                    l_cluster.S = self.clusters[g_cluster_id].S
-                    l_cluster.theta = np.matmul(
-                        np.linalg.inv(np.eye(self.d) + l_cluster.S),l_cluster.u)
+            for i in range(0,self.usernum*2,2):
+                l_server_id = l_cluster_info[i].astype(np.int)
+                l_cluster_id = l_cluster_info[i + 1].astype(np.int)
+                if l_cluster_id == -1 or l_server_id == -1:
+                    continue
+                #print("l_cluster_info:",l_cluster_info)
+                #print("l_cluster_id:",l_cluster_id)
+                l_server = self.l_server_list[l_server_id]
+                l_cluster = l_server.clusters[l_cluster_id]
+                l_cluster.S = self.clusters[g_cluster_id].S
+                l_cluster.theta = np.matmul(
+                    np.linalg.inv(np.eye(self.d) + l_cluster.S),l_cluster.u)
 
-                    #create new buffers
-                    l_cluster.S_up = np.zeros((self.d,self.d))
-                    l_cluster.S_down = np.zeros((self.d,self.d))
-                    l_cluster.u_up = np.zeros(self.d)
-                    l_cluster.u_down = np.zeros(self.d)
-                    l_cluster.T_up = 0
-                    l_cluster.T_down = 0
+                #create new buffers
+                l_cluster.S_up = np.zeros((self.d,self.d))
+                l_cluster.S_down = np.zeros((self.d,self.d))
+                l_cluster.u_up = np.zeros(self.d)
+                l_cluster.u_down = np.zeros(self.d)
+                l_cluster.T_up = 0
+                l_cluster.T_down = 0
 
     def find_global_cluster(self, l_server_id, l_cluster_id):
         g_cluster_want = -1
@@ -458,7 +438,7 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
                     # print('result_tmp:',result_tmp)
 
                 if t % 100000 ==  0:
-                    npzname = "no_"+str(number)+"_DC_1_5_20_user_" + str(t)
+                    npzname = "no_"+str(number)+"homo_DC_1_5_20_user_" + str(t)
                     print(i)
                     np.savez(npzname, nu=self.usernum, d=self.d, L=len(self.clusters), T=t, G_server_regret=self.regret,
                              cluster_num=len(self.clusters), theta_exp= result_tmp, theta_theo=envir.theta)

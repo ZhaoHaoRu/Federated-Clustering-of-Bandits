@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import numpy as np
 import copy
 import Environment as Envi
@@ -10,7 +11,9 @@ class User:
         self.T = 0  # round
         self.b = np.zeros(self.d)
         self.V = np.zeros((self.d, self.d))
+        print("t", type(t))
         self.rewards = np.zeros(t)
+        print("t", type(t))
         self.best_rewards = np.zeros(t)
         self.theta = np.zeros(d)
 
@@ -25,7 +28,8 @@ class User:
         # 暂时设c_t=1
         self.theta = np.matmul(np.linalg.inv(np.eye(self.d) + self.V), self.b)
 
-
+    def get_info(self):
+        return self.V, self.b, self.T
 
 class Cluster(User):
     # Base cluster
@@ -40,7 +44,7 @@ class Cluster(User):
         self.users_begin = users_begin
         self.user_num = user_num
         self.b = b  # np.eye(d)
-        self.T = T  # np.zeros(d)
+        self.T = T
         self.V = V
         self.rewards = rewards
         # 不知道在cluster的reward和best reward还需不需要
@@ -51,6 +55,7 @@ class Cluster(User):
     def get_user(self,user_index):
         return self.users[user_index]
 
+    #noise array
     def store_info(self,x, y, t, r, br, ksi_noise, B_noise):
         #self.V = self.V + np.outer(x, x) + B_noise
         self.V = self.V + np.outer(x, x)
@@ -60,6 +65,12 @@ class Cluster(User):
         self.best_rewards[t] += br
         self.rewards[t] += r
         self.theta = np.matmul(np.linalg.inv(np.eye(self.d) + self.V), self.b)
+
+    def get_info(self):
+        V_t = self.V
+        b_t = self.b
+        T_t = self.T
+        return V_t, b_t , T_t
 
 
 class DC_Cluster(User):

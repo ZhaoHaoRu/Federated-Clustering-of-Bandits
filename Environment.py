@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import cmath
 
 import numpy as np
@@ -16,9 +17,9 @@ alpha = 1.5
 alpha2 = 2
 delt = 0.99
 # alpha1 =
-epsi = 0.9
-U = 1.1
-D = 1.1
+epsi = 1
+U = 1.0
+D = 1.0
 
 
 def isInvertible(S):
@@ -41,11 +42,11 @@ def sigm(delta, epsilon):
 
 
 def gamma(t, d, alpha, sigma):
-    # tmp = 4 * cmath.sqrt(d) + 2 * np.log(2 * t / alpha)
-    # # print(cmath.sqrt(d))
-    # # print(2 * t / alpha)
-    # # print(np.log(2 * t / alpha))
-    # return sigma * cmath.sqrt(t) * tmp
+    tmp = 4 * cmath.sqrt(d) + 2 * np.log(2 * t / alpha)
+    # print(cmath.sqrt(d))
+    # print(2 * t / alpha)
+    # print(np.log(2 * t / alpha))
+    #return sigma * cmath.sqrt(t) * tmp
     return 1
 
 
@@ -68,7 +69,6 @@ class Environment:
         self.d = d
         #self.p = p  # probability distribution over users,在我们的paper中有用吗？还是假设所有user都是uniform的,p应该是一个Rd的数组，如果是uniform的，那么p[i]=1/n
         self.user_num = num_users
-        # self.items = generate_items(num_items=L, d=d)
         self.theta = theta
 
     def get_items(self):
@@ -82,10 +82,10 @@ class Environment:
         reward = np.dot(self.theta[i], x)
         #这里这样写是因为代码里面有bug可能使得reward<0，回头改掉
         if reward < 0 or reward > 1:
-            print("reward:", reward)
+            #print("reward:", reward)
             y = 0
         else:
-            print("reward:", reward)
+            #print("reward:", reward)
             y = np.random.binomial(1, reward)  # 在19 cascading中介绍的一个概念，标记recommend item是否被click，在update b的值的时候会用到
         ksi_noise = np.random.normal(np.zeros(d), np.eye(d), (d, d))
         best_reward = np.max(np.dot(items, self.theta[i]))
@@ -102,7 +102,8 @@ class Environment:
         #   print("reward:", reward)
         y = np.random.binomial(1, reward)  # 在19 cascading中介绍的一个概念，标记recommend item是否被click，在update b的值的时候会用到
         # else:
-        ksi_noise = np.random.normal(np.zeros(d), np.eye(d), (d, d))
+        ksi_noise = np.random.normal(np.zeros(d), np.eye(d),(d,d))
+        #print("ksi_noise:",ksi_noise.shape)
         best_reward = np.max(np.dot(items, self.theta[i]))
         # print("best reward:",best_reward)
         return reward, y, best_reward, ksi_noise, B_noise
