@@ -312,7 +312,8 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
                     self.clusters[g_cluster_id].S += l_cluster.S
                     self.clusters[g_cluster_id].u += l_cluster.u
                     self.clusters[g_cluster_id].T += l_cluster.T
-                    self.clusters[g_cluster_id].theta = np.matmul(
+
+                self.clusters[g_cluster_id].theta = np.matmul(
                         np.linalg.inv(np.eye(self.d) + self.clusters[g_cluster_id].S), self.clusters[g_cluster_id].u)
 
                 for i in range(0,self.usernum*2,2):
@@ -325,6 +326,10 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
                     l_server = self.l_server_list[l_server_id]
                     l_cluster = l_server.clusters[l_cluster_id]
                     l_cluster.S = self.clusters[g_cluster_id].S
+                    l_cluster.u = self.clusters[g_cluster_id].u
+                    l_cluster.T = self.clusters[g_cluster_id].T
+                    if t >= 60000:
+                        t = t
                     l_cluster.theta = np.matmul(
                         np.linalg.inv(np.eye(self.d) + l_cluster.S),l_cluster.u)
 
@@ -360,9 +365,10 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
         if np.linalg.det(S1 + S2) / np.linalg.det(S1) >= U:
             g_cluster_id = self.find_global_cluster(l_server_id, l_cluster_id)
             if g_cluster_id == -1:
-                #print("l_server_id",l_server_id)
-                #print("l_cluster_id", l_cluster_id)
-                #print(self.partition)
+                #zhe一步没有输出，说明找partition的操作是对的
+                print("l_server_id",l_server_id)
+                print("l_cluster_id", l_cluster_id)
+                print(self.partition)
                 self.clusters[9].S += S2
             if g_cluster_id != -1:
                 #print("exist value1:", self.clusters.keys())
@@ -371,6 +377,7 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
                 self.clusters[g_cluster_id].T += l_cluster.T_up
                 self.clusters[g_cluster_id].theta = np.matmul(np.linalg.inv(np.eye(self.d) + self.clusters[g_cluster_id].S), self.clusters[g_cluster_id].u)
                 l_cluster_info = self.partition[g_cluster_id]
+                l_cluster_other_num = 0
                 for i in range(0, self.usernum*2, 2):
                     l_server_id_other = l_cluster_info[i]
                     l_cluster_id_other = l_cluster_info[i + 1]
@@ -383,6 +390,9 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
                     l_cluster_other.S_down += S2
                     l_cluster_other.u_down += l_cluster.u_up
                     l_cluster_other.T_down += l_cluster.T_up
+                    l_cluster_other_num += 1
+
+                print(l_cluster_other_num)
 
                 #Local server cleans the buffer
                 l_cluster.S += l_cluster.S_up
@@ -419,12 +429,14 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
         theta_exp = dict()
         result_tmp = list()
         for s in range(1, phase + 1):
+            if s == 16:
+                s = s
             self.detection(phase_cardinality**s - 1)
             for i in range(1, phase_cardinality**s + 1):
                 t = (phase_cardinality**s - 1)//(phase_cardinality - 1) + i - 1
                 if t >= all_round:
                     break
-                if t == 3394:
+                if t == 40000:
                     t = t
                 if t % 5000 == 0:
                     print(t)
@@ -439,7 +451,8 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
                 items = envir.get_items()
                 r_item_index = l_server.recommend(l_cluster_index=l_cluster_index,T= t,items= items)
                 x = items[r_item_index]
-                self.reward[t - 1], y, self.best_reward[t - 1], ksi_noise, B_noise = envir.feedback_Local(items= items,i= user_index,k= r_item_index,d= self.d)
+                #这个地方加了一个round，但是其实只是出于打印的需要，回头删掉
+                self.reward[t - 1], y, self.best_reward[t - 1], ksi_noise, B_noise = envir.feedback_Local(items= items,i= user_index,k= r_item_index,d= self.d, now_round= t)
                 l_cluster.users[user_index].store_info(x, y, t - 1, self.reward[t - 1],self.best_reward[t - 1], ksi_noise[0], B_noise)
                 l_cluster.store_info(x, y, t - 1, self.reward[t - 1],self.best_reward[t - 1], ksi_noise[0], B_noise)
                 self.check_upload(l_server_index, l_cluster_index)
