@@ -2,6 +2,7 @@
 import numpy as np
 
 import CLUB
+import SCLUB
 import FCLUB
 import LDP_FCLUB_DC
 import LinUCB
@@ -45,8 +46,8 @@ theta_tmp=np.vstack((theta_tmp1, theta_tmp2, theta_tmp3, theta_tmp4, theta_tmp5)
 #在DC的版本中，T为phase
 #回头传参两个npzname
 def main(number, num_users, d, m, L, l_server_num,T, filename='',npzname=''):
-    #seed = int(time.time() * 100) % 399
-    seed = 22
+    seed = int(time.time() * 100) % 399
+    # seed = 262
     print("Seed = %d" % seed)
     np.random.seed(seed)
     random.seed(seed)
@@ -81,15 +82,17 @@ def main(number, num_users, d, m, L, l_server_num,T, filename='',npzname=''):
         userList[l_server_num - 1] = num_users - (num_users//l_server_num)*(l_server_num - 1)
 
     main_FCLUB(number, num_users= num_users, d=d, m=m, L=L, l_server_num=l_server_num,theta= theta,T=T, filename=filename,npzname=npzname, seed = seed, userList= userList)
-    # main_FCLUB_DC(number,num_users= num_users, d=d, m=m, L=L, l_server_num=l_server_num,theta= theta,T=T, filename=filename,npzname=npzname, seed= seed,userList=userList)
-    # Homogeneous(number, num_users=num_users, d=d, m=m, L=L, l_server_num=l_server_num, theta=theta, T=T,
-    #               filename=filename, npzname=npzname, seed=seed, userList=userList)
-    # DC_Homogenenous(number, num_users=num_users, d=d, m=m, L=L, l_server_num=l_server_num, theta=theta, T=T,
-    #               filename=filename, npzname=npzname, seed=seed, userList=userList)
-    # main_CLUB(number, num_users=num_users, d=d, m=m, L=L, l_server_num=l_server_num, theta=theta, T=T,
-    #               filename=filename, npzname=npzname, seed=seed, userList=userList)
-    # main_LinUCB(number, num_users=num_users, d=d, theta=theta, T=T, L= L,
-    #               filename=filename, npzname=npzname, seed=seed)
+    main_FCLUB_DC(number,num_users= num_users, d=d, m=m, L=L, l_server_num=l_server_num,theta= theta,T=T, filename=filename,npzname=npzname, seed= seed,userList=userList)
+    Homogeneous(number, num_users=num_users, d=d, m=m, L=L, l_server_num=l_server_num, theta=theta, T=T,
+                  filename=filename, npzname=npzname, seed=seed, userList=userList)
+    DC_Homogenenous(number, num_users=num_users, d=d, m=m, L=L, l_server_num=l_server_num, theta=theta, T=T,
+                  filename=filename, npzname=npzname, seed=seed, userList=userList)
+    main_CLUB(number, num_users=num_users, d=d, m=m, L=L, l_server_num=l_server_num, theta=theta, T=T,
+                  filename=filename, npzname=npzname, seed=seed, userList=userList)
+    main_SCLUB(number, num_users=num_users, d=d, m=m, L=L, l_server_num=l_server_num, theta=theta, T=T,
+                  filename=filename, npzname=npzname, seed=seed, userList=userList)
+    main_LinUCB(number, num_users=num_users, d=d, theta=theta, T=T, L= L,
+                  filename=filename, npzname=npzname, seed=seed)
 
 
 
@@ -108,7 +111,7 @@ def main_FCLUB(number, num_users, d, m, L, l_server_num,T,theta,seed,userList,fi
     G_server = FCLUB.Global_server(l_server_num, num_users, userList, d = d, T = T)
     envi = Envi.Environment(d=d, num_users=num_users, L= L, theta=theta)
     start_time = time.time()
-    regret, theta_get, reward, x_list, y_list= G_server.run(envi, T,number)
+    regret, theta_get, reward, x_list, y_list= G_server.run(envi, T,number, user_num = num_users)
     run_time = time.time() - start_time
 
     if npzname == '':
@@ -124,7 +127,7 @@ def Homogeneous(number, num_users, d, m, L, l_server_num,T,theta,seed,userList,f
     G_server = homogeneous_version.Global_server(l_server_num, num_users, userList, d=d, T=T)
     envi = Envi.Environment(d=d, num_users=num_users, L= L, theta=theta)
     start_time = time.time()
-    regret, theta_get, reward, x_list, y_list = G_server.run(envi, T, number)
+    regret, theta_get, reward, x_list, y_list = G_server.run(envi, T, number, user_num = num_users)
     run_time = time.time() - start_time
 
     if npzname == '':
@@ -220,19 +223,56 @@ def main_LinUCB(number, num_users, d, theta, T, L, seed, filename = '', npzname=
                  theta_exp=theta_get, theta_theo=theta, reward=reward, x=x_list,
                  y=y_list)
 
+def main_SCLUB(number, num_users, d, m, L, l_server_num, T, theta, seed, userList, filename='', npzname=''):
+    # 对于DC版本而言T是phase
+    phase = (np.log(T) / np.log(phase_cardinality)).astype(np.int64)
+    round = (phase_cardinality ** (phase + 1) - 1) // (phase_cardinality - 1)
+    G_server = SCLUB.Global_server(l_server_num, num_users, userList, d=d, T= round)
+    print("round:", (phase_cardinality ** (phase + 1) - 1) // (phase_cardinality - 1))
+    envi = Envi.Environment(d=d, num_users=num_users, L=L, theta=theta)
+    start_time = time.time()
+    regret, theta_get, reward, cluster_num = G_server.run(envi, phase=phase, number=number)
+    run_time = time.time() - start_time
+
+    if npzname == '':
+        print(len(regret))
+        print(len(theta))
+        np.savez('SCLUB_1_19_user_20_1', nu=num_users, d=d, L=L, T=round, seed=seed, G_server_regret=regret,
+                 run_time=run_time, cluster_num=len(G_server_DC.clusters), reward=reward)
+    else:
+        np.savez("SCLUB_" + npzname, nu=num_users, d=d, L=L, T=round, seed=seed, G_server_regret=regret,
+                 cluster_num= cluster_num, run_time=run_time, reward=reward)
+
 
 # 按间距中的绿色按钮以运行脚本。
 if __name__ == '__main__':
+    number = eval(input())
+    num_users = eval(input())
+    if num_users == 20:
+        main(number, num_users=20, d=10, m=4, L=8, l_server_num=4, T=100000, filename='ml_20user_d10.npy',
+             npzname='no' + str(number) + '_1_19_user_20_1000000round_alpha_1.5')
+    elif num_users == 50:
+        main(number, num_users=50, d=10, m=5, L=8, l_server_num=5, T=300000, filename='ml_50user_d10.npy',
+             npzname='no' + str(number) + '_1_19_user_50_1000000round_alpha_1.5')
+    elif num_users == 100:
+        main(number, num_users=100, d=10, m=10, L=8, l_server_num=10, T=500000, filename='ml_100user_d10.npy',
+             npzname= 'no' + str(number) + '_1_19_user_100_1000000round_alpha_1.5')
+    else:
+        main(number=10, num_users=1000, d=10, m=20, L=8, l_server_num=10, T=1000000, filename='ml_1000user_d10.npy',
+             npzname= 'no' + str(number) + "_1_19_user_1000_alpha_1.5_2000000round")
+
+
+
     #L : item的数量
     #main(num_users = 1, d = 10, m = 1, L = 1, l_server_num = 1, T = 1000000, filename= '')
     #m相当于cluster的数目？应该是num_user/theta的个数
     #main(num_users=100, d=10, m = 6 , L = 5, l_server_num=5, T = 100000, filename='')
-    #main(number = 10,num_users=1000, d=10, m=20, L=8, l_server_num=10, T=2000000, filename='ml_1000user_d10.npy', npzname= "no10_user_1000_alpha_1.5_2000000round")
-    #main(number = 10,num_users=100, d=10, m=10, L=8, l_server_num=10, T=1000000, filename='ml_100user_d10.npy',npzname='no10_user_100_1000000round_alpha_1.5')
+    # main(number = 10,num_users=1000, d=10, m=20, L=8, l_server_num=10, T=2000000, filename='ml_1000user_d10.npy', npzname= "no10_user_1000_alpha_1.5_2000000round")
+    # main(number = 10,num_users=100, d=10, m=10, L=8, l_server_num=10, T=1000000, filename='ml_100user_d10.npy',npzname='no10_user_100_1000000round_alpha_1.5')
     # main(number = 10,num_users=50, d=10, m=5, L=8, l_server_num=5, T=1000000, filename='ml_50user_d10.npy',
     #        npzname='no10_user_50_1000000round_alpha_1.5')
-    main(number = 10,num_users=20, d=10, m=4, L=8, l_server_num=4, T=100000, filename='',
-         npzname='no3_1_16_user_20_1000000round_alpha_1.5')
+    # main(number = 10,num_users=20, d=10, m=4, L=8, l_server_num=4, T=100000, filename='ml_20user_d10.npy',
+    #      npzname='no4_1_18_user_20_1000000round_alpha_1.5')
 
 
 
