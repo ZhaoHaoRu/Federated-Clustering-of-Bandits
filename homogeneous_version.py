@@ -151,7 +151,7 @@ class Global_server:
         self.clusters[cmin].theta = np.matmul(np.linalg.inv(np.eye(self.d) + self.clusters[cmin].V), self.clusters[cmin].b)
 
 
-    def run(self, envir, T, number):
+    def run(self, envir, T, number, user_num):
         theta_exp = dict()
         theta_one_user = list()
         y_list = list()
@@ -193,7 +193,7 @@ class Global_server:
 
             if i % 100000 ==  0:
                 #12_18_100_user_alpha_4.5是30user,alpha=1.5
-                npzname = "no_"+str(number)+"homogeneous_FCLUB_1_5_20_user_" + str(i)
+                npzname = "homo" + "no_"+str(number)+"_1_26" + str(user_num) + "_user_" + str(i)
                 np.savez(npzname, nu=self.usernum, d=self.d, L=len(self.clusters), T=i, G_server_regret=self.regret,
                          cluster_num=len(self.clusters), theta_exp= result, theta_theo=envir.theta, reward= self.reward)
 

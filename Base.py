@@ -131,41 +131,69 @@ class DC_Cluster(User):
 
 class CDP_Cluster(DC_Cluster):
     def __init__(self, b, V, users_begin, d, user_num, t, rewards ,best_rewards,l_server_index, index,users = {}, T = 0, ):
-        super(DC_Cluster, self).__init__(self, b, V, users_begin, d, user_num, t, rewards ,best_rewards,l_server_index, index,users, T)
+        super(CDP_Cluster, self).__init__(b, V, users_begin, d, user_num, t, rewards ,best_rewards,l_server_index, index,users, T)
         self.H_queue = dict()
         self.h_queue = dict()
         self.serial_num = 1
-        self.H_now = np.zeros(self.d,self.d)
+        self.H_now = np.zeros((self.d,self.d))
         self.h_now = np.zeros(self.d)
-        self.H_former = np.zeros(self.d, self.d)
+        self.H_former = np.zeros((self.d, self.d))
         self.h_former = np.zeros(self.d)
 
     def countBits(self,n):
-        count = 0;
-        while n != 0 :
-            n = n & (n-1)
-            count += 1
-        return count
+        List = list()
+        bit_num = 0
+        t = n
+        while n != 0:
+            if n % 2 != 0:
+                left = t - 2 ** bit_num + 1
+                right = t
+                List.append(tuple([left,right]))
+                t = left - 1
+
+            n = n // 2
+            bit_num += 1
+
+        return List
+
+
+
+    def phase_update(self):
+        self.H_now = np.zeros((self.d, self.d))
+        self.h_now = np.zeros(self.d)
+        self.H_former = np.zeros((self.d, self.d))
+        self.h_former = np.zeros(self.d)
+        self.H_queue.clear()
+        self.h_queue.clear()
+        self.serial_num = 1
 
     def privatizer(self, t, delt, epsi):
         m = np.log(t + 1).astype(np.int) + 1
-        n = self.countBits(self.serial_num)
-        while len(self.H_queue) < n:
-            N_tmp = np.random.normal(0, 64 * m * (np.log(2 / delt)) ** 2 / epsi ** 2)
-            N = (N_tmp + N_tmp.T) / np.sqrt(2)
-            H = N[0:self.d, 0:self.d]
-            h = N[0:self.d,self.d - 1:self.d]
-            self.H_queue[len(self.H_queue)] = H
-            self.h_queue[len(self.h_queue)] = h
-
-        H_tmp = np.zeros(self.d,self.d)
+        num_list = self.countBits(self.serial_num)
+        tmp = self.serial_num
+        H_tmp = np.zeros((self.d, self.d))
         h_tmp = np.zeros(self.d)
-        for i in range(n):
-            H_tmp += self.H_queue[i]
-            h_tmp += self.h_queue[i]
+        for i in num_list:
+            if i in self.H_queue.keys():
+                H_tmp += self.H_queue[i]
+                h_tmp += self.h_queue[i]
+            else:
+                N_tmp = np.random.normal(0, 64 * m * (np.log(2 / delt)) ** 2 / epsi ** 2, (self.d + 1, self.d + 1))
+                N = (N_tmp + N_tmp.T) / np.sqrt(2)
+                H = N[0:self.d, 0:self.d]
+                h = N[0:self.d,self.d - 1:self.d]
+                self.H_queue[i] = H
+                self.h_queue[i] = np.squeeze(h)
 
-        self.H_former = self.H_now
-        self.h_former = self.h_now
+                H_tmp += self.H_queue[i]
+                h_tmp += self.h_queue[i]
+
+        self.h_now = h_tmp
+        self.H_now = H_tmp
+
+        self.serial_num += 1
+        # self.H_former = self.H_now
+        # self.h_former = self.h_now
 
 
 

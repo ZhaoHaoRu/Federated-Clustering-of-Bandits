@@ -253,12 +253,13 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
                     del self.clusters[c2]
         #print("gcluster number after merge:", len(self.clusters))
 
-    def run(self, envir, T, number):
+    def run(self, envir, T, number, user_num):
         theta_exp = dict()
         theta_one_user = list()
         y_list = list()
         x_list = list()
         result = dict()
+        communication_cost = list()
         for i in range(1, T+1):
             if i % 5000 == 0:
                 print(i)
@@ -286,7 +287,7 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
             self.communicate()
             self.merge()
             self.regret[i - 1] = self.best_reward[i - 1] - self.reward[i - 1]
-
+            communication_cost.append(i)
 
             if i % 100000 ==  0:
                 for clst in self.clusters:
@@ -307,32 +308,13 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
 
             if i % 100000 ==  0:
                 #12_18_100_user_alpha_4.5是30user,alpha=1.5
-                npzname = "no_"+str(number)+"_FCLUB_1_5_20_user_" + str(i)
+                npzname = "FCLUB" +"no_"+str(number)+"_1_26"+ str(user_num) + '_user_' + str(i)
                 np.savez(npzname, nu=self.usernum, d=self.d, L=len(self.clusters), T=i, G_server_regret=self.regret,
                          cluster_num=len(self.clusters), theta_exp= result, theta_theo=envir.theta, reward= self.reward)
 
 
-        return self.regret,result, self.reward, x_list, y_list
+        return self.regret,result, self.reward, x_list, y_list, communication_cost
 
-            # g_cluster_index = self.cluster_inds[user_index]
-            # g_cluster = self.clusters[g_cluster_index]
-            # print("user_index:",user_index)
-            # print("user reward:", l_cluster.users[user_index].rewards[i - 1])
-            # print("user b:", l_cluster.users[user_index].b)
-            # print("user V:", l_cluster.users[user_index].V)
-            # print("user theta:", l_cluster.users[user_index].theta)
-            # print("user T:", l_cluster.users[user_index].T)
-            # print("l_cluster reward:", l_cluster.rewards[i - 1])
-            # print("l_cluster b:", l_cluster.b)
-            # print("l_cluster V:", l_cluster.V)
-            # print("l_cluster theta:", l_cluster.theta)
-            # print("l_cluster T:", l_cluster.T)
-            # print("g_cluster reward:", g_cluster.rewards[i - 1])
-            # print("g_cluster b:", g_cluster.b)
-            # print("g_cluster V:", g_cluster.V)
-            # print("g_cluster theta:", g_cluster.theta)
-            # print("g_cluster T:", g_cluster.T)
-            # print(" ")
 
 
 

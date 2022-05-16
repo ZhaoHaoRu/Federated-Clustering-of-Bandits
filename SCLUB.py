@@ -4,6 +4,8 @@
 #1.16更改：
 #1.生成随机图，所有edge-probility 均为0.8
 #(这样做似乎不是很可行，因为我们结点编号不是从0~n,如果构建完再删边的话有额外的时间复杂度
+import cmath
+
 import networkx as nx
 import numpy as np
 
@@ -11,12 +13,13 @@ import Base
 import Environment as Envi
 import copy
 import os
-from Environment import alpha, delt, epsi, sigma, alpha2
+from Environment import  delt, epsi, sigma, alpha2
 
 S = 1
 phase_cardinality = 2
-alpha_p = np.sqrt(2)
-alpha = 1
+# alpha_p = cmath.sqrt(2)
+alpha_p = 1
+alpha = 1.5
 #class Global_server
 
 #Global_server G_server
@@ -262,7 +265,7 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
 
                 if t % 100000 == 0:
                     # 12_18_100_user_alpha_4.5是30user,alpha=1.5
-                    npzname = "no_" + str(number) + "_SCLUB_1_19" + str(self.usernum) + "_user_" + str(i)
+                    npzname = "SCLUB" + "no_" + str(number) + "_1_26" + str(self.usernum) + "_user_" + str(t)
                     np.savez(npzname, nu=self.usernum, d=self.d, L=len(self.l_server_list), T=t,
                              G_server_regret=self.regret,
                              cluster_num=cluster_num, theta_exp=result, theta_theo=envir.theta, reward=self.reward)

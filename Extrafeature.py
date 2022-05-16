@@ -27,18 +27,29 @@ def kmeans_thetas(num_users, d, n_clusters, filename):
     print(thetas.shape)
     return thetas
 
-U = ExtractUserFeatures(num_users=100, d=10, filename='ml_100user_100item.npy')
+U = ExtractUserFeatures(num_users=500, d=10, filename='ml_1000user_1000item.npy')
 print(U.shape)
-np.save('ml_100user_d10', U)
-U = np.load('ml_100user_d10.npy')
+np.save('ml_1000user_d10_tmp.npy', U)
+U = np.load('ml_1000user_d10_tmp.npy')
 print(U)
+
+# U = ExtractUserFeatures(num_users=1000, d=10, filename='yelp_1000user_1000item.npy')
+# print(U.shape)
+# np.save('yelp_1000user_d10_tmp.npy', U)
+# U = np.load('yelp_1000user_d10_m10.npy')
+# print(U)
 
 # thetas = kmeans_thetas(num_users=1000, d=20, n_clusters=10, filename='ml_1000user_d20.npy')
 # np.save('ml_1000user_d20_m10', thetas)
 # thetas = np.load('ml_1000user_d20_m10.npy')
 # print(thetas)
 
-thetas = kmeans_thetas(num_users=100, d=10, n_clusters=10, filename='ml_100user_d10.npy')
-np.save('ml_100user_d10.npy', thetas)
-thetas = np.load('ml_100user_d10.npy')
-print(thetas)
+# thetas = kmeans_thetas(num_users=500, d=10, n_clusters=10, filename='ml_500user_d10.npy')
+# np.save('ml_500user_d10.npy', thetas)
+# thetas = np.load('ml_500user_d10.npy')
+# print(thetas)
+
+# thetas = kmeans_thetas(num_users=1000, d=10, n_clusters=10, filename='yelp_1000user_d10.npy')
+# np.save('yelp_1000user_d10_m10', thetas)
+# thetas = np.load('yelp_1000user_d10_m10.npy')
+# print(thetas)

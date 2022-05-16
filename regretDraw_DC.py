@@ -1,7 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
 
-data = np.load('LDP_FCLUB_DC_12_25_user_10_1.npz',allow_pickle=True)
+data = np.load('CLUB_no3_2_12_user_20_100000round_1_0.1_m_5_d_10.npz',allow_pickle=True)
 fig = plt.figure()
 T = data['T']
 print('T:',T)

@@ -15,9 +15,17 @@ import sys
 alpha = 1.5
 #alpha2 = 250
 alpha2 = 2
-delt = 0.99
+delt = 0.1
 alpha1 = 1
+# alpha1 = 0.01
+# epsi = 0.1
+# epsi = 0.5
 epsi = 1
+# epsi = 2
+# epsi = 4
+# epsi = 6
+# epsi = 8
+# epsi = 10
 U = 1.01
 D = 1.01
 
@@ -75,17 +83,21 @@ def rou_max(t, d):
 
 def upsilon(t, d):
     m = np.log(t) + 1
-    tmp1 = cmath.sqrt(d) + 2 * np.log(2 * t * alpha1)
+    tmp1 = cmath.sqrt(d) + 2 * np.log(2 * t / alpha1)
     return cmath.sqrt(m * 2 * tmp1 / cmath.sqrt(2 * epsi))
 
 #这里的L是local server的数目
 def beta_CDP(t, d, L):
-    rou_min = rou_min(t, d)
-    rou_max = rou_max(t, d)
-    tmp1 = cmath.sqrt(2 * np.log(2/alpha1) + d * np.log(3 + t / (d * rou_min)))
-    sigm = sigma_CDP(t)
+    rou_min1 = rou_min(t, d)
+    rou_max1 = rou_max(t, d)
+    tmp1 = cmath.sqrt(2 * np.log(2/alpha1) + d * np.log(rou_max1 / rou_min1 + t / (d * rou_min1)))
+    # sigm = sigma_CDP(t)
+    sigm = 1
     upsi = upsilon(t, d)
-    return sigm * tmp1 + L * cmath.sqrt(rou_max) + L * upsi
+    #print(sigm * tmp1)
+    #print(cmath.sqrt(L * rou_max1))
+    #print(cmath.sqrt(L) * upsi)
+    return sigm * tmp1 + cmath.sqrt(L * rou_max1) + cmath.sqrt(L) * upsi
 
 sigma = sigm(delt, epsi);
 

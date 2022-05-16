@@ -8,36 +8,27 @@ import numpy as np
 import Base
 import Environment as Envi
 import copy
-import os
-from Environment import alpha, delt, epsi, sigma, alpha2,U, D
+from Environment import alpha, delt, epsi, sigma, alpha2, U, D
 
 S = 1
 phase_cardinality = 2
 
-#class Global_server
-
-#Global_server G_server
-
-
 class Local_server:
-    def __init__(self, nl, d, begin_num, T, server_index, edge_probability=0.8):
+    def __init__(self, nl, d, begin_num, T, server_index):
         self.nl = nl
         self.d = d
         self.rounds = T  # the number of all rounds
-        #self.G = nx.gnp_random_graph(nl, edge_probability)
-        # 生成无向完全图，此时index是真正的user index
-        user_index_list = list(range(begin_num,begin_num + nl))
-        self.G = nx.generators.classic.complete_graph(user_index_list)
-        #self.G = nx.gnp_random_graph(user_index_list, edge_probability)
-        #print('图中所有的节点', self.G.nodes())
-        self.clusters = {0: Base.DC_Cluster(b=np.zeros(d), T=0, V=np.zeros((d,d)), users_begin = begin_num, d=d, user_num = nl, t= self.rounds, rewards= np.zeros(self.rounds), best_rewards= np.zeros(self.rounds), l_server_index=server_index, index= 0)}  # users的初始化方法直接抄了老师里面的，不知道对不对
+        user_index_list = list(range(begin_num, begin_num + nl))
+        self.G = nx.generators.classic.complete_graph(user_index_list)  # Generate undirected complete graph，user indexes range from begin_num to begin_num + nl
+        self.clusters = {0: Base.DC_Cluster(b=np.zeros(d), T=0, V=np.zeros((d, d)), users_begin=begin_num, d=d, user_num=nl,
+                                            t=self.rounds, rewards=np.zeros(self.rounds), best_rewards=np.zeros(self.rounds),
+                                            l_server_index=server_index, index=0)}  # users的初始化方法直接抄了老师里面的，不知道对不对
         self.index = server_index
         self.cluster_inds = dict()
         self.begin_num = begin_num
         for i in range(begin_num, begin_num + nl):
             self.cluster_inds[i] = 0    # 每个user所属于的cluster的index, key:user_index ,value:cluster_index
-        #self.cluster_inds = np.zeros(nl)  # 每个user所属于的cluster的index,这种方法貌似不可行，得用字典，因为user index是从global的维度而言的
-        self.num_clusters = np.zeros(self.rounds,np.int64)  # 每一轮中cluster的数量，总共记录round T 次
+        self.num_clusters = np.zeros(self.rounds, np.int64)  # 每一轮中cluster的数量，总共记录round T 次
         self.num_clusters[0] = 1
         self.V = np.zeros((d,d)) # 对于server而言V，b，T是否是必要的？
         self.b = np.zeros(d)
@@ -61,6 +52,7 @@ class Local_server:
         #此处S是一个常数，取了1，用于计算β
         #参数调整
         beta_t = Envi.beta(sigma, alpha, gamma_t, S, self.d, T_t)
+        print("beta: ", beta_t)
         Minv = np.linalg.inv(M_t)
         theta = np.dot(Minv,b_t)
         # 将global server上算得的M，b，β传给当前的local server
@@ -153,6 +145,7 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
         self.regret = np.zeros(self.rounds)
         self.reward = np.zeros(self.rounds)
         self.best_reward = np.zeros(self.rounds)
+        self.communication_cost = 0
         user_begin = 0
         #极端情况：cluster的数目等于user的数目，第一维表述global cluster，第二维表示global cluster里面的local cluster
         self.partition = np.zeros((self.usernum,self.usernum*2))
@@ -295,6 +288,7 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
         if (former_partition != self.partition).any():
             #Renew the cluster information and create new upload/download buffers
             #更新global cluster的S,u,T工作在merge 中已经完成
+            self.communication_cost += 1
             for g_cluster_id in self.clusters:
                 self.clusters[g_cluster_id].S = np.zeros((self.d,self.d))
                 self.clusters[g_cluster_id].u = np.zeros(self.d)
@@ -363,6 +357,7 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
         S1 = l_cluster.S
         S2 = l_cluster.S_up
         if np.linalg.det(S1 + S2) / np.linalg.det(S1) >= U:
+            self.communication_cost += 1
             g_cluster_id = self.find_global_cluster(l_server_id, l_cluster_id)
             if g_cluster_id == -1:
                 #zhe一步没有输出，说明找partition的操作是对的
@@ -415,6 +410,7 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
             l_server = self.l_server_list[l_server_id.astype(np.int)]
             l_cluster = l_server.clusters[l_cluster_id.astype(np.int)]
             if np.linalg.det(V_g) / np.linalg.det(l_cluster.S) >= D:
+                self.communication_cost += 1
                 l_cluster.S += l_cluster.S_down
                 l_cluster.u += l_cluster.u_down
                 l_cluster.T += l_cluster.T_down
@@ -428,6 +424,7 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
     def run(self, envir, phase,number, all_round):
         theta_exp = dict()
         result_tmp = list()
+        communication_cost = list()
         for s in range(1, phase + 1):
             if s == 16:
                 s = s
@@ -452,12 +449,13 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
                 r_item_index = l_server.recommend(l_cluster_index=l_cluster_index,T= t,items= items)
                 x = items[r_item_index]
                 #这个地方加了一个round，但是其实只是出于打印的需要，回头删掉
-                self.reward[t - 1], y, self.best_reward[t - 1], ksi_noise, B_noise = envir.feedback_Local(items= items,i= user_index,k= r_item_index,d= self.d, now_round= t)
+                self.reward[t - 1], y, self.best_reward[t - 1], ksi_noise, B_noise = envir.feedback_Local(items= items,i= user_index,k= r_item_index,d= self.d)
                 l_cluster.users[user_index].store_info(x, y, t - 1, self.reward[t - 1],self.best_reward[t - 1], ksi_noise[0], B_noise)
                 l_cluster.store_info(x, y, t - 1, self.reward[t - 1],self.best_reward[t - 1], ksi_noise[0], B_noise)
                 self.check_upload(l_server_index, l_cluster_index)
                 self.check_download(g_cluster_index)
                 self.regret[t - 1] = self.best_reward[t - 1] - self.reward[t - 1]
+                communication_cost.append(self.communication_cost)
 
                 if t % 100000 ==  0:
                     for clst in self.clusters:
@@ -471,9 +469,9 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
                     # print('result_tmp:',result_tmp)
 
                 if t % 100000 ==  0:
-                    npzname = "no_"+str(number)+"_DC_1_5_20_user_" + str(t)
+                    npzname = "FCLUB_DC" + "no_"+str(number)+"_1_26" + str(self.usernum) + "_user_" + str(t)
                     print(i)
                     np.savez(npzname, nu=self.usernum, d=self.d, L=len(self.clusters), T=t, G_server_regret=self.regret,
-                             cluster_num=len(self.clusters), theta_exp= result_tmp, theta_theo=envir.theta)
+                             cluster_num=len(self.clusters), theta_exp= result_tmp, theta_theo=envir.theta, reward= self.reward)
 
-        return self.regret,result_tmp,self.reward
+        return self.regret,result_tmp,self.reward,communication_cost

@@ -11,10 +11,11 @@ import Base
 import Environment as Envi
 import copy
 import os
-from Environment import alpha, delt, epsi, sigma, alpha2
+from Environment import  delt, epsi, sigma, alpha2
 
 S = 1
 
+alpha = 20
 
 class Global_server:  # 最开始每个local_server中的user数目是已知的
     def __init__(self, n, d, T):  # 这里n指的是user的总数量，假设最开始是已知的,每个cluster的user的数量已知，存储在numlist中
@@ -39,6 +40,7 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
         # 此处S是一个常数，取了1，用于计算β
         # 参数调整
         beta_t = Envi.beta(sigma, alpha, gamma_t, S, self.d, T_t)
+        print("beta LinUCB :", beta_t)
         Minv = np.linalg.inv(M_t)
         theta = np.dot(Minv, b_t)
         # 将global server上算得的M，b，β传给当前的local server
@@ -74,7 +76,7 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
                 for i in range(self.usernum):
                     result[i] = self.users[i].theta
                 #12_18_100_user_alpha_4.5是30user,alpha=1.5
-                npzname = "no_"+str(number)+"_FCLUB_1_5_20_user_" + str(i)
+                npzname = "LinUCB" + "no_"+str(number)+"_1_26"+ str(self.usernum) + "_user_" + str(i)
                 np.savez(npzname, nu=self.usernum, d=self.d, T=i, G_server_regret=self.regret,
                     theta_exp= result, theta_theo=envir.theta, reward= self.reward)
 

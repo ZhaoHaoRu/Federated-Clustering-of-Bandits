@@ -11,11 +11,7 @@ def load_sparse_matrix(filename):
 	user_list = []
 	item_list = []
 
-	i = 0
 	for line in f:
-		i += 1
-		if i > 100:
-			break;
 		word = line.split('::')
 		user_list.append(int(word[0]))
 		item_list.append(int(word[1]))
@@ -61,8 +57,8 @@ def get_reduced_matrix(num_users, num_items, filename):
 	data3 = extract_users(num_users, data2)
 	return data3.toarray()
 
-reduced_matrix = get_reduced_matrix(num_users = 100, num_items = 100, filename = 'ratings.dat')
+reduced_matrix = get_reduced_matrix(num_users = 500, num_items = 500, filename = 'ratings.dat')
 print(reduced_matrix.shape)
-# np.save('ml_1000user_1000item', reduced_matrix)
-# X = np.load('ml_1000user_1000item.npy')
-# print(X.shape)
+np.save('ml_500user_500item', reduced_matrix)
+X = np.load('ml_500user_500item.npy')
+print(X.shape)

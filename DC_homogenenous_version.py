@@ -305,6 +305,8 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
                 l_server = self.l_server_list[l_server_id]
                 l_cluster = l_server.clusters[l_cluster_id]
                 l_cluster.S = self.clusters[g_cluster_id].S
+                l_cluster.u = self.clusters[g_cluster_id].u
+                l_cluster.T = self.clusters[g_cluster_id].T
                 l_cluster.theta = np.matmul(
                     np.linalg.inv(np.eye(self.d) + l_cluster.S),l_cluster.u)
 
@@ -438,9 +440,9 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
                     # print('result_tmp:',result_tmp)
 
                 if t % 100000 ==  0:
-                    npzname = "no_"+str(number)+"homo_DC_1_5_20_user_" + str(t)
+                    npzname = "homo_DC" + "no_"+str(number)+"_1_26" + str(self.usernum) + "_user_" + str(t)
                     print(i)
                     np.savez(npzname, nu=self.usernum, d=self.d, L=len(self.clusters), T=t, G_server_regret=self.regret,
-                             cluster_num=len(self.clusters), theta_exp= result_tmp, theta_theo=envir.theta)
+                             cluster_num=len(self.clusters), theta_exp= result_tmp, theta_theo=envir.theta, reward= self.reward)
 
         return self.regret,result_tmp,self.reward

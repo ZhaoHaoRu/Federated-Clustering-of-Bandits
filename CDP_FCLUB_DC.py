@@ -51,17 +51,19 @@ class Local_server:
         return l_cluster_index
 
     #这里的T是当前的round,首先计算了当前的信息
-    def recommend(self, l_cluster_index, T, items):
+    def recommend(self, l_cluster_index, T, items, L_num):
         cluster = self.clusters[l_cluster_index]
         V_t, b_t , T_t = cluster.get_info()
         #print('b_t:',b_t)
         # sigma_t = sigma_CDP(T)
         # gamma_t = Envi.gamma(T_t, self.d, alpha, sigma_t)
         # lambda_t = gamma_t * 2
-        M_t = V_t
+        M_t = V_t + np.eye(self.d)
         #此处S是一个常数，取了1，用于计算β
         #参数调整
-        beta_t = Envi.beta_CDP(T_t, self.d,)
+        beta_t = Envi.beta_CDP(T_t, self.d, L_num)
+        beta_t = beta_t * 0.005
+        print("beta_t:", beta_t)
         Minv = np.linalg.inv(M_t)
         theta = np.dot(Minv,b_t)
         # 将global server上算得的M，b，β传给当前的local server
@@ -168,6 +170,7 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
         #极端情况：cluster的数目等于user的数目，第一维表述global cluster，第二维表示global cluster里面的local cluster
         self.partition = np.zeros((self.usernum,self.usernum*2))
         self.partition.fill(-1)
+        self.communicate_cost = 0
         #这里假设local server与local cluster的index都是从0开始的
         for i in range(0, L*2, 2):
            self.partition[0][i] = i/2
@@ -306,6 +309,7 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
         self.communicate()
         self.merge(former_partition)
         if (former_partition != self.partition).any():
+            self.communicate_cost += 1
             #Renew the cluster information and create new upload/download buffers
             #更新global cluster的S,u,T工作在merge 中已经完成
             for g_cluster_id in self.clusters:
@@ -378,6 +382,7 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
         S2 = l_cluster.S_up
         H = l_cluster.H_now - l_cluster.H_former
         if np.linalg.det(S1 + S2 + H) / np.linalg.det(S1) >= U:
+            self.communicate_cost += 1
             g_cluster_id = self.find_global_cluster(l_server_id, l_cluster_id)
             if g_cluster_id == -1:
                 #zhe一步没有输出，说明找partition的操作是对的
@@ -434,6 +439,7 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
             l_server = self.l_server_list[l_server_id.astype(np.int)]
             l_cluster = l_server.clusters[l_cluster_id.astype(np.int)]
             if np.linalg.det(V_g) / np.linalg.det(l_cluster.S) >= D:
+                self.communicate_cost += 1
                 l_cluster.S += l_cluster.S_down
                 l_cluster.u += l_cluster.u_down
                 l_cluster.T += l_cluster.T_down
@@ -447,6 +453,7 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
     def run(self, envir, phase,number, all_round):
         theta_exp = dict()
         result_tmp = list()
+        communication_cost = list()
         for s in range(1, phase + 1):
             if s == 16:
                 s = s
@@ -468,7 +475,7 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
                 l_cluster = l_server.clusters[l_cluster_index]
                 # the context set
                 items = envir.get_items()
-                r_item_index = l_server.recommend(l_cluster_index=l_cluster_index,T= t,items= items, L_num= )
+                r_item_index = l_server.recommend(l_cluster_index=l_cluster_index,T= t,items= items, L_num= self.l_server_num)
                 x = items[r_item_index]
                 #这个地方加了一个round，但是其实只是出于打印的需要，回头删掉
                 self.reward[t - 1], y, self.best_reward[t - 1], ksi_noise, B_noise = envir.feedback_Local(items= items,i= user_index,k= r_item_index,d= self.d)
@@ -477,6 +484,7 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
                 self.check_upload(l_server_index, l_cluster_index, phase_cardinality**s - 1)
                 self.check_download(g_cluster_index)
                 self.regret[t - 1] = self.best_reward[t - 1] - self.reward[t - 1]
+                communication_cost.append(self.communicate_cost)
 
                 if t % 100000 ==  0:
                     for clst in self.clusters:
@@ -489,10 +497,10 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
                     # print('result:',result)
                     # print('result_tmp:',result_tmp)
 
-                if t % 100000 ==  0:
-                    npzname = "no_"+str(number)+"_DC_1_20" + str(self.usernum) + "_user_" + str(t)
-                    print(i)
-                    np.savez(npzname, nu=self.usernum, d=self.d, L=len(self.clusters), T=t, G_server_regret=self.regret,
-                             cluster_num=len(self.clusters), theta_exp= result_tmp, theta_theo=envir.theta, reward= self.reward)
+                # if t % 100000 ==  0:
+                #     npzname = "CDP_FCLUB_DC" + "no_"+str(number)+"_1_26" + str(self.usernum) + "_user_" + str(t)
+                #     print(i)
+                #     np.savez(npzname, nu=self.usernum, d=self.d, L=len(self.clusters), T=t, G_server_regret=self.regret,
+                #              cluster_num=len(self.clusters), theta_exp= result_tmp, theta_theo=envir.theta, reward= self.reward)
 
-        return self.regret,result_tmp,self.reward
+        return self.regret,result_tmp,self.reward, communication_cost

@@ -11,10 +11,10 @@ import Base
 import Environment as Envi
 import copy
 import os
-from Environment import alpha, delt, epsi, sigma, alpha2
+from Environment import  delt, epsi, sigma, alpha2
 
 S = 1
-
+alpha = 0.25
 #class Global_server
 
 #Global_server G_server
@@ -209,7 +209,7 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
 
 
             cluster_num = 0
-            if i % 10000 ==  0:
+            if i % 100000 ==  0:
                 for server in self.l_server_list:
                     print("type:",type(server))
                     cluster_num += len(server.clusters)
@@ -221,7 +221,7 @@ class Global_server:  # 最开始每个local_server中的user数目是已知的
 
             if i % 100000 ==  0:
                 #12_18_100_user_alpha_4.5是30user,alpha=1.5
-                npzname = "no_"+str(number)+"_FCLUB_1_5_20_user_" + str(i)
+                npzname = "CLUB" + "no_"+str(number)+"_1_26" + str(self.usernum) + "_user_" + str(i)
                 np.savez(npzname, nu=self.usernum, d=self.d, L=len(self.l_server_list), T=i, G_server_regret=self.regret,
                          cluster_num= cluster_num, theta_exp= result, theta_theo=envir.theta, reward= self.reward)
 
