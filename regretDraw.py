@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 #FCLUB_3_no1_3_2_user_20_100000round_yelp
-data = np.load('LinUCB4_21_40_user10_round.npz',allow_pickle=True)
+data = np.load('CDP_FCLUB_DC_3_no1_3_31_user_20_100000round_yelp.npz',allow_pickle=True)
 fig = plt.figure()
 # seed = data['seed']
 # communication_cost = data['comu_cost']
@@ -12,8 +12,8 @@ fig = plt.figure()
 # print(seed)
 # fig_th = plt.figure()
 # fig_ac = plt.figure()
-T = data['T']
-print("T", T)
+T = data['rounds']
+print("rounds", T)
 regret = data['G_server_regret']
 print(type(regret))
 print(regret.shape)
@@ -64,10 +64,10 @@ plt.show()
 
 #communication cost
 # ax = fig.add_subplot(111)
-# regret_range = np.arange(1, T)
-# plt.plot(regret_range, communication_cost[:T:], 'r.-', ms=2, label="communication cost")
+# regret_range = np.arange(1, rounds)
+# plt.plot(regret_range, communication_cost[:rounds:], 'r.-', ms=2, label="communication cost")
 # ax.set_ylabel('communication cost in each round')
-# my_x_ticks = np.arange(0, T + 1, T/5)
+# my_x_ticks = np.arange(0, rounds + 1, rounds/5)
 # plt.xticks(my_x_ticks)
 # my_y_ticks = np.arange(0, communication_cost[-1],communication_cost[-1]/10)
 # plt.yticks(my_y_ticks)
@@ -89,7 +89,7 @@ for j in range(T):
     cumulative_reward.append(cmu_reward)
     aver_reward.append(cmu_reward/(j + 1))
 ax = fig.add_subplot(111)
-# plt.plot(np.arange(0,T), theta_norm, 'r.-', ms=2, label="theta_norm")
+# plt.plot(np.arange(0,rounds), theta_norm, 'r.-', ms=2, label="theta_norm")
 # ax.scatter(regret_range, regret, color='r', label="regret")
 my_x_ticks = np.arange(0, T + 1, T/5)
 theta1 = theta_hat[9999]
@@ -136,7 +136,7 @@ plt.show()
 # print(len(y))
 # print(x[1])
 # print(y)
-# for i in range(T):
+# for i in range(rounds):
 #     x[i] = np.linalg.norm(x[i])
 #     y[i] = np.linalg.norm(y[i])
 #

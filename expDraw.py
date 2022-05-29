@@ -19,22 +19,23 @@ data = dict()
 for i in range(8):
     if i == 5:
         #CDP_FCLUB_DC2_18_40_user10_round_1
-        data[i] = np.load(Label[i] + '4_21_40_user10_round' + '.npz')
+        data[i] = np.load(Label[i] + '5_21_40_user10_round' + '.npz')
         continue
     # elif i == 4:
     #     data[i] = np.load(Label[i] + '2_20_40_user10_round' + '.npz')
     #     data_tmp = np.load(Label[i] + '2_18_40_user10_round_2' + '.npz')
     # else:
     #CDP_FCLUB_DC3_21_40_user10_round
-    data[i] = np.load(Label[i] + '4_3_40_user10_round' + '.npz')
+    data[i] = np.load(Label[i] + '5_21_40_user10_round' + '.npz')
 
 fig = plt.figure()
 # seed = FCLUB_data['seed']
 # print(seed)
 # fig_th = plt.figure()
 # fig_ac = plt.figure()
-T = data[0]['T']
-print("T", T)
+# T = data[0]['rounds']
+T = 300000
+# print("rounds", T)
 
 color_map = list()
 color_map.append('xkcd:blue')
@@ -64,7 +65,7 @@ reward = list()
 std_reward = list()
 min_reward = list()
 max_reward = list()
-n = 200000
+n = 300000
 for i in range(8):
     regret.append(data[i]['G_server_regret'])
     reward.append(data[i]['reward'])
@@ -94,13 +95,13 @@ nu = data[0]['nu']
 theta_norm = list()
 
 
-# def handle_regret(regret, std_regret, T):
+# def handle_regret(regret, std_regret, rounds):
 #     accumulate_regret = list()
 #     Cumulative_regret = 0
 #     min_reward = list()
 #     max_reward = list()
 #     cumulative_std = 0
-#     for i in range(T):
+#     for i in range(rounds):
 #         Cumulative_regret += regret[i]
 #         accumulate_regret.append(Cumulative_regret)
 #         regret[i] = Cumulative_regret / (i + 1)
@@ -129,12 +130,12 @@ def handle_regret(regret, T):
 # def Draw_aver_regret():
 #     ax = fig.add_subplot(111)
 #     for i in range(8):
-#         accumulate_regret_tmp, Cumulative_regret_tmp = handle_regret(regret[i], T)
+#         accumulate_regret_tmp, Cumulative_regret_tmp = handle_regret(regret[i], rounds)
 #         accumulate_regret.append(accumulate_regret)
 #         Cumulative_regret.append(Cumulative_regret_tmp)
-#         plt.plot(regret_range, regret[i][:T:], '.-', color= color_map[i], ms=2, label=Label[i])
+#         plt.plot(regret_range, regret[i][:rounds:], '.-', color= color_map[i], ms=2, label=Label[i])
 #     ax.set_ylabel('regret in each round')
-#     my_x_ticks = np.arange(0, T + 1, T/5)
+#     my_x_ticks = np.arange(0, rounds + 1, rounds/5)
 #     plt.xticks(my_x_ticks)
 #     my_y_ticks = np.arange(0, 0.1, 0.01)
 #     plt.yticks(my_y_ticks)
@@ -157,8 +158,8 @@ def Draw_accumulate_regret():
     ax.set_ylabel('regret in each round')
     my_x_ticks = np.arange(0, T + 1, T / 5)
     plt.xticks(my_x_ticks)
-    plt.ylim((0, 2401))
-    my_y_ticks = np.arange(0, 2401, 240)
+    plt.ylim((0, 3501))
+    my_y_ticks = np.arange(0, 3501, 350)
     plt.yticks(my_y_ticks)
     plt.xlabel("round")
     plt.ylabel("cumulative regret")

@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 # d = 10 #dimension
 # user_num = 10  # the number of all users
 # I = 10  # the number of items
-# T = 100 # the number of rounds
+# rounds = 100 # the number of rounds
 # L = 3  # the number of local server
 #userList = [3, 3, 4]
 #theta_tmp= np.vstack((theta1, theta2, theta1, theta1, theta2, theta3, theta1, theta2, theta3, theta3))
@@ -80,15 +80,15 @@ def main(number, num_users, d, m, L, l_server_num,T, filename='',npzname=''):
         userList = [num_users//l_server_num] * (l_server_num - 1)
         userList[l_server_num - 1] = num_users - (num_users//l_server_num)*(l_server_num - 1)
 
-    # main_FCLUB(number, num_users= num_users, d=d, m=m, L=L, l_server_num=l_server_num,theta= theta,T=T, filename=filename,npzname=npzname, seed = seed, userList= userList)
+    # main_FCLUB(number, num_users= num_users, d=d, m=m, L=L, l_server_num=l_server_num,theta= theta,rounds=rounds, filename=filename,npzname=npzname, seed = seed, userList= userList)
     main_FCLUB_DC(number,num_users= num_users, d=d, m=m, L=L, l_server_num=l_server_num,theta= theta,T=T, filename=filename,npzname=npzname, seed= seed,userList=userList)
-    # Homogeneous(number, num_users=num_users, d=d, m=m, L=L, l_server_num=l_server_num, theta=theta, T=T,
+    # Homogeneous(number, num_users=num_users, d=d, m=m, L=L, l_server_num=l_server_num, theta=theta, rounds=rounds,
     #               filename=filename, npzname=npzname, seed=seed, userList=userList)
-    # DC_Homogenenous(number, num_users=num_users, d=d, m=m, L=L, l_server_num=l_server_num, theta=theta, T=T,
+    # DC_Homogenenous(number, num_users=num_users, d=d, m=m, L=L, l_server_num=l_server_num, theta=theta, rounds=rounds,
     #               filename=filename, npzname=npzname, seed=seed, userList=userList)
-    # main_CLUB(number, num_users=num_users, d=d, m=m, L=L, l_server_num=l_server_num, theta=theta, T=T,
+    # main_CLUB(number, num_users=num_users, d=d, m=m, L=L, l_server_num=l_server_num, theta=theta, rounds=rounds,
     #               filename=filename, npzname=npzname, seed=seed, userList=userList)
-    # main_LinUCB(number, num_users=num_users, d=d, theta=theta, T=T, L= L,
+    # main_LinUCB(number, num_users=num_users, d=d, theta=theta, rounds=rounds, L= L,
     #               filename=filename, npzname=npzname, seed=seed)
 
 
@@ -96,11 +96,11 @@ def main(number, num_users, d, m, L, l_server_num,T, filename='',npzname=''):
 
 
     #former interface
-    # G_server = FCLUB.Global_server(L, user_num, userList, d, T)
+    # G_server = FCLUB.Global_server(L, user_num, userList, d, rounds)
     # envi = Envi.Environment(d=d, num_users=user_num, L = I, theta=theta_tmp)
-    # regret = G_server.run(envi, T)
+    # regret = G_server.run(envi, rounds)
     print("finish")
-    # drawResult(regret,T)
+    # drawResult(regret,rounds)
 
 
 
@@ -224,12 +224,12 @@ def main_LinUCB(number, num_users, d, theta, T, L, seed, filename = '', npzname=
 # 按间距中的绿色按钮以运行脚本。
 if __name__ == '__main__':
     #L : item的数量
-    #main(num_users = 1, d = 10, m = 1, L = 1, l_server_num = 1, T = 1000000, filename= '')
+    #main(num_users = 1, d = 10, m = 1, L = 1, l_server_num = 1, rounds = 1000000, filename= '')
     #m相当于cluster的数目？应该是num_user/theta的个数
-    #main(num_users=100, d=10, m = 6 , L = 5, l_server_num=5, T = 100000, filename='')
-    #main(number = 10,num_users=1000, d=10, m=20, L=8, l_server_num=10, T=2000000, filename='ml_1000user_d10.npy', npzname= "no10_user_1000_alpha_1.5_2000000round")
-    #main(number = 10,num_users=100, d=10, m=10, L=8, l_server_num=10, T=1000000, filename='ml_100user_d10.npy',npzname='no10_user_100_1000000round_alpha_1.5')
-    # main(number = 10,num_users=50, d=10, m=5, L=8, l_server_num=5, T=1000000, filename='ml_50user_d10.npy',
+    #main(num_users=100, d=10, m = 6 , L = 5, l_server_num=5, rounds = 100000, filename='')
+    #main(number = 10,num_users=1000, d=10, m=20, L=8, l_server_num=10, rounds=2000000, filename='ml_1000user_d10.npy', npzname= "no10_user_1000_alpha_1.5_2000000round")
+    #main(number = 10,num_users=100, d=10, m=10, L=8, l_server_num=10, rounds=1000000, filename='ml_100user_d10.npy',npzname='no10_user_100_1000000round_alpha_1.5')
+    # main(number = 10,num_users=50, d=10, m=5, L=8, l_server_num=5, rounds=1000000, filename='ml_50user_d10.npy',
     #        npzname='no10_user_50_1000000round_alpha_1.5')
     main(number = 10,num_users=20, d=10, m=4, L=8, l_server_num=4, T=100000, filename='',
          npzname='no5_1_17_user_20_1000000round_alpha_1.5')
