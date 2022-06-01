@@ -1,2 +1,1 @@
-# Federated-Clustering-of-Bandits
-Federated Clustering of Bandits
+# Federated Online Clustering of Bandits
