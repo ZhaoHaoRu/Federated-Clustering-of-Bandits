@@ -6,7 +6,7 @@ This is the experiment for Federated Online Clustering of Bandits (UAI, 2022).
 ```text
 
 ├── data_preprocessing  // preprocessing of data in movielens and yelp files
-├── environment         // parameters, environment feedback for experiment and etc.
+├── environment         // environment feedback for experiment and etc.
 ├── experiment          // main part of the experiment
 ├── plot                // the plot functions
 ├── data_processing     // processing the experimental data to get the desired information
