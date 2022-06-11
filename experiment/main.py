@@ -14,10 +14,7 @@ import homogeneous_version
 import DC_homogenenous_version
 import time
 import random
-import math
 import Environment as Envi
-import matplotlib.pyplot as plt
-
 
 d = 10 #dimension
 user_num = 30  # the number of all users
@@ -214,7 +211,7 @@ def main_SCLUB(number, num_users, d, m, L, l_server_num, T, theta, seed, userLis
         print(len(regret))
         print(len(theta))
         np.savez('SCLUB_1_19_user_20_1', nu=num_users, d=d, L=L, T=round, seed=seed, G_server_regret=regret,
-                 run_time=run_time, cluster_num=len(G_server_DC.clusters), reward=reward)
+                 run_time=run_time, cluster_num=len(G_server.clusters), reward=reward)
     else:
         np.savez("SCLUB_" + npzname, nu=num_users, d=d, L=L, T=round, seed=seed, G_server_regret=regret,
                  cluster_num= cluster_num, run_time=run_time, reward=reward)
@@ -228,7 +225,7 @@ def main_CDP_FCLUB_DC(number, num_users, d, m, L, l_server_num,T,theta, seed, us
     print("round:", (phase_cardinality**(phase + 1) - 1)//(phase_cardinality - 1))
     envi = Envi.Environment(d=d, num_users=num_users, L=L, theta=theta)
     start_time = time.time()
-    regret, theta_get, reward , comu_cost = G_server_DC.run(envi,phase=phase, number= number, all_round = (phase_cardinality**(phase + 1) - 1)//(phase_cardinality - 1))
+    regret, theta_get, reward, comu_cost = G_server_DC.run(envi,phase=phase, number= number, all_round = (phase_cardinality**(phase + 1) - 1)//(phase_cardinality - 1))
     run_time = time.time() - start_time
 
     if npzname == '':
@@ -245,7 +242,9 @@ def main_CDP_FCLUB_DC(number, num_users, d, m, L, l_server_num,T,theta, seed, us
 if __name__ == '__main__':
     number = eval(input())
     num_users = eval(input())
-    #synthetic dataset
+    # synthetic dataset
+    # Notice: all the files are under folder 'raw_data'. to run the program, please choose the correct filepath first,
+    # such as '../raw_data/yelp_data/yelp_1000user_d10_m10.npy'
     if num_users == 20:
         # main(number, num_users=20, d=10, m=4, L=10, l_server_num=5, rounds=100000, filename='20_theta.npy',
         #      npzname='no' + str(number) + '_2_23_user_20_100000round_1_0.1'+'_m_4'+'_d_10')
@@ -253,7 +252,7 @@ if __name__ == '__main__':
         #      npzname='no' + str(number) + '_1_23_user_60_100000round_1_0.1' + '_m_5' + '_d_10')
         # main(number, num_users=80, d=10, m=5, L=10, l_server_num=5, rounds=100000, filename='',
         #      npzname='no' + str(number) + '_1_23_user_80_100000round_1_0.1' + '_m_5' + '_d_10')
-        main(number, num_users=20, d=10, m=4, L=10, l_server_num=5, T=100000, filename='yelp_1000user_d10_m10.npy',
+        main(number, num_users=20, d=10, m=4, L=10, l_server_num=5, T=100000, filename='../raw_data/yelp_data/yelp_1000user_d10_m10.npy',
              npzname='3_no' + str(number) + '_5_25_user_20_100000round_yelp')
     elif num_users == 40:
         # comparative experiment global server num 

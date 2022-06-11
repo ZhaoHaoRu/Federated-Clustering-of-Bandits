@@ -8,7 +8,6 @@ import numpy as np
 import Base
 import Environment as Envi
 import copy
-import os
 from Environment import alpha, sigma, U, D
 
 S = 1

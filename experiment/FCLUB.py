@@ -4,7 +4,6 @@
 
 import networkx as nx
 import numpy as np
-
 import Base
 import Environment as Envi
 import copy
